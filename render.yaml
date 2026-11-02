@@ -1,0 +1,17 @@
+# La versión de Python se toma del archivo .python-version del repositorio.
+# Render solicita MONGO_URI al crear el Blueprint; su valor no se guarda aquí.
+services:
+  - type: web
+    name: exoplanetas-api-juanfmarbo
+    runtime: python
+    plan: free
+    region: virginia
+    branch: main
+    buildCommand: python -m pip install -r requirements.txt
+    startCommand: python -m uvicorn api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB
+        value: proyecto_segundo_corte

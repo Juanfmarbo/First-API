@@ -188,6 +188,8 @@ Una creación correcta responde `201`. Un nombre duplicado responde `409`; una e
 | `GUIA_CODIGO.md` | Recorrido de funciones e importaciones, validación, consultas y estado de la interfaz. |
 | `GUIA_SUSTENTACION.md` | Guion de demostración y explicación del código. |
 | `PRUEBAS_REALIZADAS.md` | Resultado de la verificación local, su alcance y comprobaciones pendientes. |
+| `render.yaml` | Plantilla del servicio de la API en Render Free, sin credenciales. |
+| `GUIA_DESPLIEGUE.md` | Configuración de Render y Streamlit Cloud, conexión con Atlas y verificación de las URLs públicas. |
 
 El archivo `.env` se crea únicamente en el equipo donde se ejecuta el proyecto. No forma parte del repositorio.
 
@@ -244,16 +246,18 @@ ciclo habitual `add`, `commit` y `push`.
 
 El material de clase propone Render para la API y Streamlit Community Cloud para el dashboard. Antes de utilizarlos, revisa las condiciones y los recursos disponibles de cada servicio.
 
+La [guía de despliegue](GUIA_DESPLIEGUE.md) detalla los valores de configuración, los secretos y las comprobaciones finales. El archivo `render.yaml` conserva una plantilla del backend. Si ya existe un servicio para esta API, continúa con ese servicio para evitar crear otro.
+
 Para el backend, conecta el repositorio, instala las dependencias con:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 Y configura el comando de inicio:
 
 ```bash
-uvicorn api:app --host 0.0.0.0 --port $PORT
+python -m uvicorn api:app --host 0.0.0.0 --port $PORT
 ```
 
 Configura las variables de MongoDB en el servicio, sin escribirlas en el código. Revisa también el acceso de red de Atlas. Para el dashboard, selecciona `dashboard.py` y configura `API_BASE_URL` con la dirección pública de la API. Una dirección `localhost` identifica el equipo o servicio donde se ejecuta el programa, por lo que no conecta dos servicios distintos en internet.
