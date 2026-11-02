@@ -1,0 +1,17 @@
+# Credenciales locales: nunca se incluyen en el repositorio.
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Entorno virtual y archivos que Python genera al ejecutar.
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Archivos del sistema, editor y pruebas temporales.
+.DS_Store
+.vscode/
+*.log
+.pytest_cache/
