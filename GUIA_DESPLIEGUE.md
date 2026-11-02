@@ -1,8 +1,14 @@
 # Publicar el proyecto para el bono
 
-El README docente contempla el bono por desplegar la API y/o el dashboard en la nube y entregar la URL pública. Para dejar disponible la aplicación completa, nuestro objetivo es disponer de dos enlaces: uno para la API en Render y otro para el dashboard en Streamlit Community Cloud. Los datos continúan en MongoDB Atlas.
+El README docente contempla el bono por desplegar la API y/o el dashboard en la nube y entregar la URL pública. El proyecto dispone de dos enlaces: uno para la API en Render y otro para el dashboard en Streamlit Community Cloud. Los datos continúan en MongoDB Atlas.
 
-**Preparado** significa que el repositorio contiene el código y la configuración necesarios. **Desplegado y comprobado** significa que ambos servicios tienen una URL real y que las verificaciones del apartado 5 funcionan. Tener este documento o `render.yaml` en GitHub todavía no demuestra que la aplicación esté publicada.
+## Estado real al 2 de noviembre de 2026
+
+La **API está desplegada y verificada** en [https://exoplanetas-api-juanfmarbo.onrender.com](https://exoplanetas-api-juanfmarbo.onrender.com). El **dashboard público está disponible y verificado** en [https://exoplanetasproyecto.streamlit.app/](https://exoplanetasproyecto.streamlit.app/) y abre sin iniciar sesión. Se comprobaron las tres pestañas, las cuatro preguntas con sus gráficas, filtros, paginación y creación desde el formulario público, con persistencia en Atlas.
+
+El servicio de Render es `exoplanetas-api-juanfmarbo`, plan **Free**, región **Virginia**. El despliegue utilizado en la verificación inicial, `dep-dbkeqjl9fdbs739v25og`, del commit `54e134e04deed0487f7b5775f107ef1d17133c32`, terminó el **2 de noviembre de 2026 a las 15:07:50, hora de Bogotá**. Su estado se comprobó como `live`; además se verificaron las respuestas de la API y la conexión con Atlas.
+
+Las instrucciones siguientes permiten mantener o reproducir la configuración de los servicios publicados. El detalle de las verificaciones, separado por entorno y etapa, está en `PRUEBAS_REALIZADAS.md`.
 
 ## 1. Antes de comenzar
 
@@ -14,9 +20,9 @@ El archivo `.python-version` selecciona Python **3.12**. Render permite indicar 
 
 ## 2. Configurar la API en Render
 
-### Trabajar con un único servicio
+### Continuar con el servicio existente
 
-El proyecto necesita un servicio web de Render para la API. Si ya se creó desde la integración de Render o desde su panel, abre ese servicio y revisa su configuración. El dashboard se publica por separado en Streamlit.
+La API ya utiliza el servicio `exoplanetas-api-juanfmarbo`. Continúa con él para revisar variables, registros y nuevos despliegues. El dashboard se publica por separado en Streamlit.
 
 Solo cuando todavía no exista el servicio:
 
@@ -26,7 +32,7 @@ Solo cuando todavía no exista el servicio:
 4. Elige el plan de cómputo **Free** y configura las variables descritas más abajo.
 5. Pulsa **Create Web Service** y revisa el registro de construcción hasta que arranque.
 
-Este es el flujo de [creación de un servicio web de Render](https://render.com/docs/web-services). La configuración del servicio y la plantilla incluida deben coincidir:
+Este es el flujo de [creación de un servicio web de Render](https://render.com/docs/web-services). La configuración efectiva del servicio publicado es:
 
 | Configuración | Valor |
 |---|---|
@@ -39,13 +45,13 @@ Este es el flujo de [creación de un servicio web de Render](https://render.com/
 | Directorio raíz | Raíz del repositorio |
 | Build Command | `python -m pip install -r requirements.txt` |
 | Start Command | `python -m uvicorn api:app --host 0.0.0.0 --port $PORT` |
-| Health Check Path | `/` |
+| Health Check Path | Vacío: chequeo TCP predeterminado. |
 
 Estos campos corresponden a la [referencia oficial de Blueprints](https://render.com/docs/blueprint-spec). La [guía de FastAPI en Render](https://render.com/docs/deploy-fastapi) utiliza el mismo patrón de arranque; aquí el módulo se llama `api`. El comando de producción no lleva `--reload`.
 
 ### Qué hace render.yaml
 
-`render.yaml` conserva una plantilla reproducible con esa configuración. Tenerlo en GitHub no vincula automáticamente el servicio a un Blueprint. **Si la API ya existe, continúa con ese servicio; no crees otra API desde New → Blueprint.**
+`render.yaml` conserva una plantilla reproducible del backend. Existe una diferencia explícita: la plantilla propone un chequeo HTTP en `/`, mientras que el servicio publicado tiene la ruta vacía y utiliza TCP. Tener el archivo en GitHub no vincula automáticamente el servicio a un Blueprint. **Continúa con la API existente; no crees otra desde New → Blueprint.**
 
 Si en el futuro se decide gestionar el servicio mediante un Blueprint, primero hay que identificar el recurso existente y revisar qué cambios propone Render. A partir de ese momento, las sincronizaciones pueden aplicar la configuración del archivo al servicio. El procedimiento está en [Render Blueprints](https://render.com/docs/infrastructure-as-code).
 
@@ -63,7 +69,7 @@ En la plantilla, `sync: false` permite solicitar el secreto durante una creació
 
 El `.env` de tu Mac no se copia automáticamente al servicio. Render proporciona las variables directamente al proceso, por lo que no necesitas subir ese archivo.
 
-Cuando el servicio esté creado, **copia la URL HTTPS que muestre Render**. El nombre del servicio no garantiza una dirección exacta; utiliza la que realmente te entregue la plataforma.
+La URL HTTPS verificada de este servicio es [https://exoplanetas-api-juanfmarbo.onrender.com](https://exoplanetas-api-juanfmarbo.onrender.com). Si se crea otro servicio en el futuro, utiliza la dirección que realmente entregue Render; el nombre por sí solo no garantiza la URL.
 
 ### Permitir que Render consulte Atlas
 
@@ -86,11 +92,13 @@ Abre la URL pública de la API y agrega `/salud` al final. La respuesta correcta
 - `esquema`: `final`, `clase` o `borrador`, según los datos.
 - `total`: la cantidad real de documentos.
 
-La plantilla `render.yaml` configura `/` como chequeo HTTP y confirma que la API responde. Si el servicio se creó directamente, revisa **Settings → Health Check Path** para comprobar su configuración real: sin una ruta HTTP, Render utiliza su chequeo TCP predeterminado. `/salud` comprueba además el acceso a MongoDB. Usar `/` como chequeo HTTP evita que una conexión inicial lenta a la base supere los cinco segundos que admite el [health check de Render](https://render.com/docs/health-checks). Para dar por terminada la conexión, debe funcionar `/salud`, aunque Render ya indique que el servicio está activo.
+El servicio publicado utiliza **TCP**, con **Health Check Path vacío**. La plantilla propone `/` como alternativa HTTP. `/salud` comprueba además el acceso a MongoDB y devolvió `estado: ok`, base `proyecto_segundo_corte`, colección `exoplanetas_presentacion` y esquema `final`. Las diferencias entre estos chequeos se describen en la [documentación de Render](https://render.com/docs/health-checks).
 
-## 3. Crear el dashboard en Streamlit Community Cloud
+## 3. Dashboard publicado en Streamlit Community Cloud
 
-Entra en [Streamlit Community Cloud](https://share.streamlit.io/) con la cuenta de GitHub y selecciona **Create app**. La documentación oficial muestra cómo [elegir repositorio, archivo y configuración](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy).
+La aplicación está publicada en **[https://exoplanetasproyecto.streamlit.app/](https://exoplanetasproyecto.streamlit.app/)**. Para mantenerla, utiliza los ajustes de esa aplicación existente. El procedimiento siguiente sirve para reproducir la instalación en otra aplicación cuando sea necesario.
+
+Para una instalación nueva, entra en [Streamlit Community Cloud](https://share.streamlit.io/) con la cuenta de GitHub y selecciona **Create app**. La documentación oficial muestra cómo [elegir repositorio, archivo y configuración](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy).
 
 Completa:
 
@@ -101,19 +109,19 @@ Completa:
 | Main file path | `dashboard.py` |
 | Advanced settings → Python version | **3.12** |
 
-En **Advanced settings → Secrets**, introduce esta clave en el nivel principal. Sustituye el texto entre comillas por la URL HTTPS real que copiaste de Render:
+En **Advanced settings → Secrets**, introduce esta clave en el nivel principal con la URL verificada de la API:
 
 ```toml
-API_BASE_URL = "URL_HTTPS_REAL_COPIADA_DE_RENDER"
+API_BASE_URL = "https://exoplanetas-api-juanfmarbo.onrender.com"
 ```
 
-Ese texto es un marcador para reemplazar, no una dirección publicada. La URL debe apuntar a la raíz del servicio: no agregues `/docs`, `/salud` ni `/datos`.
+La URL apunta a la raíz del servicio publicado: no agregues `/docs`, `/salud` ni `/datos`.
 
 Conserva las comillas de TOML y no coloques la clave dentro de una sección como `[api]`. Streamlit expone los secretos del nivel principal como variables de entorno, de modo que el `os.getenv` de `dashboard.py` recibe el valor. Consulta [gestión de secretos de Streamlit](https://docs.streamlit.io/develop/concepts/connections/secrets-management).
 
 El dashboard utiliza únicamente la URL de la API. La conexión y la contraseña de MongoDB se configuran en Render.
 
-Guarda la configuración y despliega. Streamlit instalará las dependencias de `requirements.txt`. Cuando termine, copia la URL pública real del dashboard. Si cambias la URL de la API, actualiza `API_BASE_URL` en los ajustes de secretos y reinicia el dashboard si sigue usando el valor anterior. Véase [secretos en Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
+En una instalación nueva, guarda la configuración y despliega; Streamlit instalará las dependencias de `requirements.txt`. En la aplicación existente, si cambias la URL de la API, actualiza `API_BASE_URL` en los ajustes de secretos y reinicia el dashboard si sigue usando el valor anterior. Véase [secretos en Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
 
 ## 4. Preparar la primera visita y la sustentación
 
@@ -125,25 +133,27 @@ Antes de la demostración:
 2. Espera a que responda y comprueba `/salud`.
 3. Abre el dashboard o vuelve a cargarlo si lo habías abierto antes.
 
-La configuración de esta guía contempla una instancia **Free** de Render y [Streamlit Community Cloud gratuito](https://docs.streamlit.io/deploy/streamlit-community-cloud). Conserva esos planes. Las instancias Free de Render están sujetas a límites; si la cuenta tiene un medio de pago, ciertos excesos de uso pueden generar cobros. Revisa las condiciones de [Render Free](https://render.com/docs/free) al configurar la cuenta.
+La API utiliza una instancia **Free** de Render y la interfaz se publica en [Streamlit Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud). Conserva esos planes. Las instancias Free de Render están sujetas a límites; si la cuenta tiene un medio de pago, ciertos excesos de uso pueden generar cobros. Revisa las condiciones de [Render Free](https://render.com/docs/free) al configurar la cuenta.
 
 ## 5. Verificar que el despliegue quedó completo
 
-Realiza estas comprobaciones desde las direcciones públicas:
+La API pública completó **31 comprobaciones correctas y 0 fallos** mediante **12 GET y 1 POST**. Posteriormente se verificó la interfaz pública y se guardó una captura desde su formulario. La comprobación de esa captura utilizó **6 GET y 12 comprobaciones correctas, con 0 fallos**, y terminó a las **15:36:00 del 2 de noviembre de 2026, hora de Bogotá**. El detalle de cada fase está en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
 
-| Comprobación | Evidencia esperada |
+| Comprobación | Estado y evidencia |
 |---|---|
-| Raíz de la API | Respuesta con la presentación y las rutas del proyecto. |
-| `/salud` | `estado: ok`, base y colección correctas, cantidad coherente con Atlas. |
-| `/datos?por_pagina=1` | Una página de datos y el total de la selección. |
-| `/estadisticas` | Respuesta con las cuatro preguntas y sus resultados. |
-| Dashboard | Preguntas, catálogo y formulario visibles. |
-| Filtro del dashboard | Tabla, métricas y gráficas corresponden a la misma selección. |
-| Creación manual | Un registro de prueba identificado como manual se guarda y puede consultarse después. |
+| Raíz de la API | Verificada: HTTP 200 con la presentación y las rutas. |
+| `/salud` | Verificada: HTTP 200 y `estado: ok`, con base, colección y esquema correctos. |
+| `/datos` | Verificada: paginación y filtros NASA, manual y candidatos. |
+| `/estadisticas` | Verificada: respuestas de las cuatro preguntas y coherencia de conteos. |
+| POST manual de la API | Verificado: HTTP 201, persistencia y exclusión del catálogo NASA. |
+| Dashboard público | Verificado: abre sin login y muestra tres pestañas y las cuatro preguntas con gráficas. |
+| Filtros del dashboard | Verificados: NASA muestra 6.375 registros; candidatos muestra 27, todos evaluables. |
+| Paginación del dashboard | Verificada: la selección de 27 candidatos ocupa páginas de 25 y 2 filas. |
+| Creación desde el formulario público | Verificada: mensaje de éxito, filtro automático por nombre y origen manual, una fila en el catálogo y persistencia comprobada mediante la API. |
 
 Para la creación, utiliza un nombre de prueba reconocible y los campos obligatorios. Deja como desconocidas las magnitudes que no correspondan a una observación real. El backend identifica esas capturas como **Registro manual del proyecto**. El catálogo NASA puede consultarse por separado con el filtro de origen.
 
-Para el despliegue completo que estamos preparando, entregaremos **las URLs verificadas de ambos servicios**. El README docente permite presentar la API y/o el dashboard; el requisito del bono es el despliegue en la nube con URL pública. Guarda los enlaces que realmente entregaron las plataformas y la fecha de la verificación. Tener el repositorio preparado o una construcción terminada no demuestra por sí solo que la aplicación funciona públicamente.
+Las dos URLs están disponibles y el recorrido completo de consulta y creación está verificado. La implementación y el despliegue quedan listos para entregar y sustentar. El README docente permite presentar la API y/o el dashboard; la sustentación, la nota y la asignación del bono corresponden a la evaluación del docente.
 
 ## 6. Si algo no funciona
 

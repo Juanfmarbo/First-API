@@ -2,6 +2,12 @@
 
 Lee el proyecto siguiendo el recorrido de una solicitud. Primero comprende qué recibe cada función y qué devuelve; después revisa sus condiciones y ciclos. Esta guía corresponde a `api.py` y `dashboard.py` de esta versión.
 
+## Ejecución local y servicios publicados
+
+El mismo `api.py` se ejecuta ahora en Render en [https://exoplanetas-api-juanfmarbo.onrender.com](https://exoplanetas-api-juanfmarbo.onrender.com). Render proporciona las variables privadas de MongoDB al proceso; no necesita el `.env` del Mac. En local, Uvicorn utiliza el puerto 8000; en Render, el comando de inicio utiliza el puerto asignado mediante `$PORT`.
+
+`dashboard.py` obtiene la dirección del backend de `API_BASE_URL`. Puede utilizar una API local o la URL pública de Render sin cambiar sus funciones. La interfaz está publicada en [https://exoplanetasproyecto.streamlit.app/](https://exoplanetasproyecto.streamlit.app/) y se verificaron consulta, filtros, paginación y creación mediante su formulario, con persistencia en Atlas. En Streamlit, la dirección del backend se configura en los secretos de nivel principal. El alcance de las pruebas está en `PRUEBAS_REALIZADAS.md`.
+
 ## 1. Dos archivos, dos responsabilidades
 
 **`api.py`** contiene el backend: conecta con MongoDB, valida entradas, consulta documentos y calcula estadísticas. **`dashboard.py`** contiene la interfaz: recoge selecciones, llama a la API y muestra resultados. El dashboard conoce la dirección del backend; la cadena privada de MongoDB pertenece a la API.

@@ -1,6 +1,6 @@
 # Pruebas realizadas
 
-## Resultado y entorno
+## 1. Verificación inicial con MongoDB local
 
 La verificación inicial de integración local terminó con **112 comprobaciones y 0 fallos**. Son comprobaciones de condiciones concretas, incluidos códigos HTTP y valores de respuesta; **no representan 112 casos de prueba independientes**.
 
@@ -8,7 +8,7 @@ Se utilizó MongoDB real, versión **8.0.17**, en una instancia local temporal e
 
 El conjunto inicial contenía **235 registros ficticios**. Superar 200 permitió comprobar que la paginación y las estadísticas no confundieran una página con toda la selección. Esas cifras pertenecen al entorno de prueba y no son resultados científicos del catálogo NASA. Los registros ficticios no se incluyen como datos del proyecto.
 
-## Qué se comprobó
+### Qué se comprobó localmente
 
 - Reconocimiento de los tres esquemas del segundo corte: final, clase y borrador; selección de colección y comportamiento con una colección vacía.
 - Filtros, páginas y estadísticas de las cuatro preguntas, comparando respuestas con resultados conocidos del conjunto sintético.
@@ -18,16 +18,88 @@ El conjunto inicial contenía **235 registros ficticios**. Superar 200 permitió
 - Interfaz con tres pestañas, filtrado, selección vacía y formulario. Crear desde el formulario guardó el documento, volvió a ejecutar la interfaz y mostró el registro con su confirmación. También se revisaron duplicados y campos obligatorios vacíos sin excepciones de la aplicación.
 - Sintaxis válida de Python, ausencia de tabulaciones y sangría de cuatro espacios.
 
-## Ajuste de certificados para Atlas
+## 2. Certificados y confirmación del usuario en Mac
 
 Se recuperó el uso de `certifi.where()` del notebook del segundo corte para las URI `mongodb+srv://`. En una comprobación posterior se ejecutó `obtener_coleccion` con el cliente real de PyMongo, simulando las respuestas DNS y la lectura inicial para evitar conexiones externas. Se verificó que el contexto TLS utiliza el conjunto de certificados de `certifi`, exige un certificado válido, comprueba el nombre del servidor y conserva los tres tiempos de espera. También se comprobó que una URI local `mongodb://` sigue sin activar TLS por este ajuste.
 
-Esta comprobación aislada y la revisión de sintaxis finalizaron correctamente. La suite inicial de 112 comprobaciones no se repitió para este cambio. El ajuste todavía debe comprobarse con Atlas desde el Mac del usuario.
+Esta comprobación aislada y la revisión de sintaxis finalizaron correctamente. La suite inicial de 112 comprobaciones no se repitió para este cambio.
 
-## Alcance y límites
+Posteriormente, **el usuario confirmó que `/salud` devolvió `ok` y que el dashboard funcionó en su Mac** después de instalar las dependencias. Esta es una confirmación del usuario en su equipo; no se presenta como una ejecución adicional de nuestra suite ni como comprobación individual de todas las funciones.
 
-Estas pruebas verificaron integración con **MongoDB local**, no con la cuenta de Atlas del usuario. Los intentos de conexión a Atlas desde el entorno de trabajo encontraron fallas de resolución DNS y de conexión TCP; por ello, no se afirma acceso autenticado ni verificación de los documentos reales.
+## 3. Verificación de la API pública con Atlas
 
-La comprobación pendiente en el equipo del usuario consiste en completar `.env`, ejecutar ambos servicios y revisar `/salud`, el catálogo y una consulta representativa. Tampoco se verificó un despliegue en internet. Publicar el código en GitHub y ejecutar correctamente una URL pública son comprobaciones diferentes.
+El servicio [exoplanetas-api-juanfmarbo](https://exoplanetas-api-juanfmarbo.onrender.com) está publicado en Render **Free**, región **Virginia**. El despliegue utilizado en esta verificación inicial, `dep-dbkeqjl9fdbs739v25og`, del commit `54e134e04deed0487f7b5775f107ef1d17133c32`, terminó el **2 de noviembre de 2026 a las 15:07:50, hora de Bogotá**, con estado `live`.
+
+Se realizaron **12 solicitudes GET y un único POST**, con **31 comprobaciones correctas y 0 fallos**: 22 de lectura y coherencia de resultados, y 9 de creación y persistencia. Son condiciones verificadas sobre las respuestas, no 31 casos independientes. Este registro se mantiene separado de las 112 comprobaciones locales.
+
+Las consultas públicas comprobaron la raíz, `/salud`, `/opciones`, paginación, filtros por procedencia y candidatos, y las estadísticas de las cuatro preguntas. La [documentación interactiva `/docs`](https://exoplanetas-api-juanfmarbo.onrender.com/docs) también se abrió en el navegador. `/salud` confirmó la conexión con `proyecto_segundo_corte`, colección `exoplanetas_presentacion`, esquema `final`.
+
+### Conteos observados antes del POST técnico
+
+| Consulta o alcance | Resultado |
+|---|---:|
+| Total de documentos de la colección | 6.376 |
+| Registros con procedencia NASA | 6.375 |
+| Registros manuales existentes | 1 |
+| Evaluables para radio e insolación, dentro de NASA | 5.693 |
+| Cumplen los dos intervalos del proyecto, dentro de NASA | 27 |
+| Información insuficiente para esos dos criterios, dentro de NASA | 682 |
+| Métodos disponibles en `/opciones`, antes de la captura técnica | 11 |
+
+`/opciones` no devolvió advertencias en esa lectura. Los conteos son una captura de la colección consultada en esa fecha. La selección de 27 objetos aplica los criterios exploratorios del proyecto y no demuestra habitabilidad.
+
+### Creación y persistencia públicas
+
+El **2 de noviembre de 2026 a las 15:11:14, hora de Bogotá**, se creó `PRUEBA_TECNICA_BONO_20261102_151114`. El POST respondió **201** con identificador `6ae8ee62bf712b90da55d501`. Las consultas posteriores comprobaron que existía exactamente una captura con ese nombre y que el identificador coincidía.
+
+El backend estableció la fuente **Registro manual del proyecto**. Todas las magnitudes e indicadores quedaron en `null`; la captura no añadió candidatos ni extremos y quedó excluida de las consultas con `origen=nasa`. El total de la colección observado después aumentó de **6.376 a 6.377**. El registro técnico permanece identificado como prueba y no representa una observación astronómica.
+
+Los errores `409` y `422` se comprobaron en el entorno local; no se repitieron públicamente en esta fase, que utilizó una sola solicitud POST.
+
+## 4. Verificación del dashboard público en el navegador
+
+El **2 de noviembre de 2026, hora de Bogotá**, se abrió [https://exoplanetasproyecto.streamlit.app/](https://exoplanetasproyecto.streamlit.app/) sin iniciar sesión. Se observó la pantalla completa con **tres pestañas** y las **cuatro preguntas con sus gráficas**.
+
+Antes de la prueba de creación mediante formulario, la interfaz mostró **6.377 documentos en toda la colección**. Se verificaron las siguientes selecciones:
+
+| Operación en la interfaz | Resultado observado |
+|---|---|
+| Elegir «Solo catálogo NASA» | 6.375 registros, 5.693 evaluables para radio e insolación y 27 candidatos. |
+| Activar «Solo cumplen radio e insolación» | 27 registros seleccionados, 27 evaluables y 27 candidatos. |
+| Abrir la primera página del catálogo de candidatos | 25 filas. |
+| Ir a la segunda página de la misma selección | 2 filas; ambas páginas completan los 27 registros. |
+
+Estos resultados se contrastaron con la API pública, que continuaba disponible con el commit de la verificación inicial y las mismas estadísticas. Las observaciones del navegador se registran por separado de las 112 comprobaciones locales y las 31 comprobaciones iniciales de la API.
+
+### Formulario público
+
+Se efectuó **un único envío desde el formulario público** con el nombre `PRUEBA_DASHBOARD_PUBLICO_1793651649279`. Las consultas de comprobación previas y posteriores al envío se realizaron el **2 de noviembre de 2026 entre las 15:34:56 y las 15:36:00, hora de Bogotá**.
+
+El navegador mostró el mensaje de creación correcta, cambió la procedencia a manual, buscó el nombre recién guardado, desactivó el filtro de candidatos y reinició la página a 1. El catálogo mostró exactamente una fila con ese nombre.
+
+Una comprobación separada utilizó **6 solicitudes GET**, incluida la consulta previa al envío, y obtuvo **12 comprobaciones correctas y 0 fallos**. Este verificador no realizó solicitudes POST. La API confirmó:
+
+- Un registro persistente con identificador `6ae8f3fabf712b90da55d502` y los campos enviados desde el formulario.
+- Procedencia **Registro manual del proyecto**, siete magnitudes y cinco indicadores en `null`.
+- Ausencia del registro en las consultas con `origen=nasa`.
+- Selección de un registro, cero evaluables, cero candidatos y uno sin información suficiente.
+- Acceso vigente a Atlas y aumento del total de la colección de **6.377 a 6.378** documentos.
+
+Las 12 comprobaciones de respuesta se distinguen de las acciones observadas en el navegador y de las 31 comprobaciones iniciales de la API. No se afirma que se haya repetido la suite local completa en producción.
+
+### Capturas técnicas conservadas
+
+| Vía de creación | Nombre identificado como prueba |
+|---|---|
+| API pública | `PRUEBA_TECNICA_BONO_20261102_151114` |
+| Formulario del dashboard público | `PRUEBA_DASHBOARD_PUBLICO_1793651649279` |
+
+Estas dos capturas creadas durante la verificación permanecen como registros manuales, con magnitudes desconocidas. No son observaciones astronómicas y quedan fuera del filtro NASA. El total de la colección y el total NASA pueden diferir porque también existen capturas manuales.
+
+## 5. Alcance de la entrega técnica
+
+La API y el dashboard están publicados y verificados. Se comprobaron lectura, filtros, paginación y creación persistente desde la interfaz pública, completando el recorrido dashboard → API → Atlas. La implementación y el despliegue están listos para entregar y sustentar.
+
+El alcance de cada fase queda documentado por separado: integración local, confirmación del usuario en Mac, verificación de la API pública y verificación del dashboard público. La sustentación, la calificación y el bono corresponden a la evaluación académica del docente.
 
 El plan de pruebas manuales para repetir la demostración está en `GUIA_SUSTENTACION.md`. La instalación y los comandos se encuentran en `README.md`.

@@ -1,10 +1,16 @@
 # Guía de sustentación: exoplanetas
 
+## Estado que podemos demostrar
+
+El [dashboard público](https://exoplanetasproyecto.streamlit.app/) abre sin login y muestra las tres pestañas, las cuatro preguntas con gráficas, filtros y paginación verificados. Su formulario también se comprobó: una captura manual se guardó, apareció en el catálogo y se verificó mediante la API. Están disponibles la [API pública en Render](https://exoplanetas-api-juanfmarbo.onrender.com), su [documentación](https://exoplanetas-api-juanfmarbo.onrender.com/docs) y la respuesta de [salud y conexión con Atlas](https://exoplanetas-api-juanfmarbo.onrender.com/salud). La implementación y el despliegue están listos para la entrega técnica y la sustentación.
+
+Para la demostración, abre primero la API y espera su respuesta si Render necesita arrancar. Después abre el dashboard público. La copia local queda como alternativa: si apunta a Render mediante `API_BASE_URL`, basta con ejecutar Streamlit en el equipo. Las pruebas realizadas y sus límites están en `PRUEBAS_REALIZADAS.md`.
+
 ## 1. Qué hicimos
 
 > Continuamos el proyecto del segundo corte sobre exoplanetas con datos de NASA. Los datos limpios se guardan en MongoDB Atlas. Creamos una API con FastAPI para consultarlos y agregar registros, y un dashboard con Streamlit para utilizar esas funciones desde el navegador.
 
-Antes de presentar, comprueba el número real de registros y las características de la colección. El código puede estar terminado sin que la conexión de otro equipo a Atlas esté configurada.
+Antes de presentar, consulta los conteos actuales y selecciona **Solo catálogo NASA** para explicar resultados del catálogo. Las capturas técnicas de verificación se identifican como manuales y no representan observaciones astronómicas. El registro de pruebas distingue la integración local, la confirmación del usuario en Mac, la API pública y la interfaz pública.
 
 ## 2. Cómo viajan los datos
 
@@ -55,7 +61,7 @@ Prepara el registro de demostración con un nombre reconocible. Explica que es u
 | ¿Para qué sirve POST? | En este proyecto, para crear un documento nuevo. |
 | ¿Qué diferencia hay entre filtro y agregación? | El filtro selecciona documentos; la agregación calcula un resumen de un conjunto de documentos. |
 | ¿Por qué validar también en la API? | Porque recibe solicitudes desde el dashboard, `/docs` y otros clientes. Debe comprobarlas todas. |
-| ¿Por qué dos terminales? | Una mantiene activo FastAPI y la otra ejecuta Streamlit. |
+| ¿Por qué dos terminales al ejecutar todo localmente? | Una mantiene activo FastAPI y la otra ejecuta Streamlit. Si el dashboard usa la API de Render, el backend ya se ejecuta allí. |
 | ¿Para qué sirve Uvicorn? | Para ejecutar el servidor FastAPI. |
 | ¿Qué aporta pandas? | Organiza las respuestas en tablas para presentarlas. |
 | ¿Qué pasa al cerrar el dashboard? | Los documentos permanecen en MongoDB; la interfaz no es donde se almacenan. |
@@ -65,7 +71,7 @@ Prepara el registro de demostración con un nombre reconocible. Explica que es u
 
 ## 5. Pruebas manuales y evidencia
 
-Esta tabla es un **plan de pruebas para la demostración**, no un registro de su ejecución en tu equipo. La verificación local ya realizada se describe en `PRUEBAS_REALIZADAS.md`. Marca cada comprobación después de observar su resultado con tu configuración y conserva una captura sin credenciales.
+Esta tabla es un **plan para repetir la demostración**. Las verificaciones de cada entorno están separadas en `PRUEBAS_REALIZADAS.md`. La interfaz pública ya se comprobó para consulta, filtros, paginación y creación persistente. Repite las operaciones que mostrarás en la presentación y explica sus resultados; las pruebas técnicas no sustituyen la defensa del trabajo.
 
 | Comprobación | Resultado esperado | Evidencia |
 |---|---|---|
@@ -79,7 +85,8 @@ Esta tabla es un **plan de pruebas para la demostración**, no un registro de su
 | Enviar una entrada inválida | Respuesta `422` con detalle; no se inserta ese registro. | Respuesta de validación. |
 | Detener temporalmente la API | El dashboard informa la falla de conexión. | Mensaje de error. |
 | Revisar GitHub | No aparecen `.env`, contraseñas ni el entorno virtual. | Lista de archivos. |
-| Probar la URL pública, si se despliega | Consulta, estadísticas y creación funcionan en internet. | URLs y resultados. |
+| Repetir la comprobación de la API pública | Consulta, estadísticas y creación funcionan mediante la API de Render. | URL y resultados. |
+| Repetir las operaciones del dashboard público | Sus filtros y formulario se comunican con la API y guardan correctamente. | URL de Streamlit y resultados observados. |
 
 Una gráfica visible necesita cifras comprobables. Un mensaje de creación necesita una consulta posterior que confirme la persistencia.
 

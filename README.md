@@ -2,6 +2,20 @@
 
 Aplicación del proyecto final de Programación Aplicada que continúa el trabajo del segundo corte sobre exoplanetas con datos de NASA. Los datos limpios se guardan en MongoDB Atlas, una API con FastAPI los consulta y un dashboard de Streamlit permite trabajar con ellos desde el navegador.
 
+## Estado comprobado al 2 de noviembre de 2026
+
+**La aplicación y su despliegue están completos y verificados, listos para entregar y sustentar.** El dashboard abre sin iniciar sesión y permite consultar el catálogo, aplicar filtros, recorrer páginas, explorar las cuatro preguntas y guardar registros manuales. Se comprobó el recorrido completo desde el formulario público hasta la API y MongoDB Atlas. La sustentación y la asignación de la nota corresponden al docente.
+
+| Componente | Enlace y estado |
+|---|---|
+| Dashboard público | [Abrir Explorador de exoplanetas](https://exoplanetasproyecto.streamlit.app/) — consulta, filtros, paginación y creación persistente verificados. |
+| API pública | [Abrir API](https://exoplanetas-api-juanfmarbo.onrender.com) — lectura y creación verificadas. |
+| Documentación de la API | [Abrir /docs](https://exoplanetas-api-juanfmarbo.onrender.com/docs). |
+| Conexión con Atlas | [Consultar /salud](https://exoplanetas-api-juanfmarbo.onrender.com/salud) — devolvió `estado: ok`. |
+| Dashboard local | Funcionamiento confirmado por el usuario en su Mac. |
+
+El despliegue de la API utilizado en su verificación inicial terminó el **2 de noviembre de 2026 a las 15:07:50, hora de Bogotá**, sobre el commit [54e134e](https://github.com/Juanfmarbo/First-API/commit/54e134e04deed0487f7b5775f107ef1d17133c32). Se comprobaron **12 solicitudes GET y 1 POST**, con **31 comprobaciones correctas y 0 fallos**. La verificación posterior del dashboard público se documenta de forma separada en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
+
 ## Cómo se conectan las partes
 
 El usuario utiliza el dashboard. El dashboard envía solicitudes HTTP a la API. La API valida las solicitudes, consulta o escribe en MongoDB y devuelve una respuesta JSON. El dashboard presenta esa respuesta como una tabla, indicadores o gráficas.
@@ -84,7 +98,7 @@ Ese mismo prefijo puede sustituir a `python` en los comandos de ejecución sigui
 | `MONGO_URI` | Tu cadena de conexión real de Atlas. Solo se configura en el backend. |
 | `MONGO_DB` | `proyecto_segundo_corte`. |
 | `MONGO_COLLECTION` | Puedes dejarla vacía para detectar una colección conocida no vacía. |
-| `API_BASE_URL` | `http://localhost:8000` en local; URL pública del backend al desplegar. |
+| `API_BASE_URL` | `http://localhost:8000` para una API local; `https://exoplanetas-api-juanfmarbo.onrender.com` para utilizar la API publicada. |
 
 La detección busca, en este orden, `exoplanetas_presentacion`, `exoplanetas_clase` y `exoplanetas`. Si escribes un nombre en `MONGO_COLLECTION`, se utiliza esa colección. La API normaliza los nombres de campos al formato final del proyecto sin reemplazar los documentos originales.
 
@@ -98,7 +112,7 @@ La conexión conserva la verificación del certificado y del nombre del servidor
 
 Si aparece `Configura MONGO_URI y MONGO_DB en el archivo .env.`, alguna variable está vacía antes de intentar la conexión: revisa el archivo `.env` junto a `api.py`, guarda y reinicia Uvicorn. El ajuste de certificados no corrige una configuración vacía, una contraseña incorrecta, un problema DNS ni una IP sin acceso en Atlas.
 
-## Ejecutar: se necesitan dos terminales
+## Ejecutar ambos servicios localmente: dos terminales
 
 Las dos terminales deben estar dentro de la carpeta del proyecto y utilizar el entorno virtual.
 
@@ -126,6 +140,8 @@ python -m streamlit run dashboard.py
 ```
 
 La interfaz se abre en [http://localhost:8501](http://localhost:8501). Para detener cada programa, utiliza `Ctrl + C` en su terminal.
+
+Para ejecutar el dashboard local utilizando la API publicada, configura `API_BASE_URL=https://exoplanetas-api-juanfmarbo.onrender.com` y ejecuta solamente Streamlit. En ese modo, el backend funciona en Render y la conexión privada con MongoDB se configura allí.
 
 ## Usar el dashboard
 
@@ -187,8 +203,9 @@ Una creación correcta responde `201`. Un nombre duplicado responde `409`; una e
 | `README.md` | Instalación, ejecución, uso y comprobaciones. |
 | `GUIA_CODIGO.md` | Recorrido de funciones e importaciones, validación, consultas y estado de la interfaz. |
 | `GUIA_SUSTENTACION.md` | Guion de demostración y explicación del código. |
-| `PRUEBAS_REALIZADAS.md` | Resultado de la verificación local, su alcance y comprobaciones pendientes. |
+| `PRUEBAS_REALIZADAS.md` | Pruebas locales, confirmación en Mac y verificaciones de la API y el dashboard públicos. |
 | `render.yaml` | Plantilla del servicio de la API en Render Free, sin credenciales. |
+| `.python-version` | Versión de Python utilizada para construir la API en Render. |
 | `GUIA_DESPLIEGUE.md` | Configuración de Render y Streamlit Cloud, conexión con Atlas y verificación de las URLs públicas. |
 
 El archivo `.env` se crea únicamente en el equipo donde se ejecuta el proyecto. No forma parte del repositorio.
@@ -222,33 +239,33 @@ Si `.env` existe y está excluido, el último comando muestra su nombre. La excl
 
 Guarda avances con mensajes concretos, por ejemplo, `Agrega filtros por categoría`. Comprueba en GitHub que `.env` y `venv/` no aparecen y que `.env.example` solo contiene valores de ejemplo.
 
-### Subir la carpeta descargada al repositorio del proyecto
+### Obtener o actualizar el repositorio existente
 
-El ZIP contiene los archivos de trabajo y no incluye el historial interno de Git.
-Si comienzas desde esa carpeta descargada, ejecuta:
+El repositorio ya tiene historial. Para obtener una copia nueva, ejecuta estos comandos desde la carpeta donde quieras guardarla:
 
 ```bash
-git init
-git add .
-git commit -m "Completa proyecto de exoplanetas"
-git branch -M main
-git remote add origin https://github.com/Juanfmarbo/First-API.git
-git push -u origin main
+git clone https://github.com/Juanfmarbo/First-API.git
+cd First-API
 ```
 
-Si Git todavía no tiene tu identidad configurada, completa primero `git config
---global user.name "Tu nombre"` y `git config --global user.email "Tu correo"`.
-La subida requiere iniciar sesión en tu cuenta de GitHub. Si ya trabajas en una
-copia clonada de ese repositorio, conserva su configuración remota y usa el
-ciclo habitual `add`, `commit` y `push`.
+Si ya tienes una copia clonada, revisa tus cambios antes de actualizarla:
+
+```bash
+git status
+git pull --ff-only
+```
+
+Si hay modificaciones locales, revísalas y guárdalas antes de actualizar. El ZIP contiene archivos de trabajo sin el historial de Git; puedes conservarlo como copia o trasladar tus cambios a una copia clonada. Conserva el historial y la configuración remota del repositorio existente.
+
+Para guardar cambios propios, utiliza el ciclo habitual `add`, `commit` y `push`. Configura tu identidad de Git si todavía hace falta. Publicar cambios requiere acceso autenticado a GitHub.
 
 ## Despliegue para el bono
 
-El material de clase propone Render para la API y Streamlit Community Cloud para el dashboard. Antes de utilizarlos, revisa las condiciones y los recursos disponibles de cada servicio.
+La API funciona en Render Free y el dashboard está disponible en Streamlit Community Cloud. El README docente permite presentar la API y/o el dashboard para el bono; este proyecto dispone de ambas URLs. La sustentación y la asignación de la nota corresponden a la evaluación del docente.
 
 La [guía de despliegue](GUIA_DESPLIEGUE.md) detalla los valores de configuración, los secretos y las comprobaciones finales. El archivo `render.yaml` conserva una plantilla del backend. Si ya existe un servicio para esta API, continúa con ese servicio para evitar crear otro.
 
-Para el backend, conecta el repositorio, instala las dependencias con:
+Para reproducir la configuración del backend, instala las dependencias con:
 
 ```bash
 python -m pip install -r requirements.txt
@@ -262,7 +279,7 @@ python -m uvicorn api:app --host 0.0.0.0 --port $PORT
 
 Configura las variables de MongoDB en el servicio, sin escribirlas en el código. Revisa también el acceso de red de Atlas. Para el dashboard, selecciona `dashboard.py` y configura `API_BASE_URL` con la dirección pública de la API. Una dirección `localhost` identifica el equipo o servicio donde se ejecuta el programa, por lo que no conecta dos servicios distintos en internet.
 
-Comprueba la URL pública con una consulta, una estadística y una creación válida antes de utilizarla en la sustentación. El despliegue es una etapa adicional; la aplicación también puede ejecutarse localmente con las dos terminales.
+Las consultas, estadísticas y una creación manual se verificaron en la API pública. En el dashboard público se comprobaron la pantalla completa, los filtros, la paginación y el envío de una captura manual que quedó guardada en Atlas y visible en el catálogo. La aplicación también puede ejecutarse localmente.
 
 ## Errores frecuentes
 
@@ -279,4 +296,10 @@ Comprueba la URL pública con una consulta, una estadística y una creación vá
 
 La integración local completó **112 comprobaciones con 0 fallos**, utilizando MongoDB real local, solicitudes HTTP y AppTest de Streamlit con datos ficticios. Incluyen verificaciones de estado y de contenido, no 112 casos independientes. El alcance y las limitaciones están en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
 
-La conexión con Atlas debe comprobarse desde el equipo del usuario. El plan manual de la guía de sustentación permite repetir el recorrido con su configuración y sus datos reales.
+Posteriormente, el usuario confirmó `/salud = ok` y el funcionamiento del dashboard en su Mac. Esta confirmación se distingue de nuestras pruebas automatizadas.
+
+La API pública completó otras **31 comprobaciones con 0 fallos**, mediante **12 GET y un único POST** contra Atlas. La captura técnica quedó identificada como manual, con magnitudes desconocidas, y se confirmó su persistencia y exclusión del catálogo NASA. Estas cifras corresponden a la prueba inicial de la API, no a una repetición pública de la suite local.
+
+El dashboard público se abrió posteriormente en el navegador, sin login. Se verificaron sus tres pestañas, las cuatro preguntas con gráficas, el filtro NASA y el filtro de candidatos. La selección de 27 candidatos se mostró en dos páginas de 25 y 2 filas.
+
+Se guardó una captura técnica mediante un único envío del formulario público. La interfaz confirmó la creación y mostró exactamente una fila con el nombre guardado. Una verificación separada mediante **6 GET y 12 comprobaciones correctas, con 0 fallos**, confirmó persistencia, procedencia manual, valores desconocidos y exclusión de NASA. La verificación mediante estas consultas terminó el **2 de noviembre de 2026 a las 15:36:00, hora de Bogotá**. Sus comprobaciones se mantienen separadas de las acciones visuales y de las verificaciones anteriores.
