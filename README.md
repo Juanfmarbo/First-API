@@ -39,7 +39,7 @@ El proyecto utiliza las siete librerías del archivo entregado en clase:
 | `requests` | Enviar solicitudes del dashboard a la API. |
 | `python-dotenv` | Cargar la configuración local desde `.env`. |
 
-Pydantic se instala como dependencia de FastAPI y se utiliza para validar los registros. No se añade una octava librería al archivo de requisitos. Los módulos incluidos en Python tampoco requieren una instalación aparte.
+Pydantic se instala como dependencia de FastAPI y se utiliza para validar los registros. `certifi` se instala como dependencia de `requests` y aporta certificados de confianza para la conexión con Atlas, como en el notebook del segundo corte. Se mantienen las siete entradas del archivo de requisitos. Los módulos incluidos en Python tampoco requieren una instalación aparte.
 
 ## Instalación en Mac o Linux
 
@@ -89,6 +89,14 @@ Ese mismo prefijo puede sustituir a `python` en los comandos de ejecución sigui
 La detección busca, en este orden, `exoplanetas_presentacion`, `exoplanetas_clase` y `exoplanetas`. Si escribes un nombre en `MONGO_COLLECTION`, se utiliza esa colección. La API normaliza los nombres de campos al formato final del proyecto sin reemplazar los documentos originales.
 
 La colección original `exoplanetas` puede carecer de los indicadores `limite_*`. La API conserva esa ausencia y no supone que valgan `0`; por ello, algunas preguntas pueden quedar sin registros evaluables en esa versión.
+
+### Certificados de MongoDB en Mac
+
+Para una conexión `mongodb+srv://`, la API utiliza `tlsCAFile=certifi.where()`. Esto proporciona a Python el archivo de certificados de confianza y ayuda cuando la instalación de Python no encuentra los certificados necesarios para validar Atlas. `certifi` ya se utilizaba en el notebook del segundo corte y no actúa como servidor intermediario.
+
+La conexión conserva la verificación del certificado y del nombre del servidor. El ajuste se aplica a las URI SRV; las conexiones locales `mongodb://` conservan sus opciones originales. La referencia técnica está en la [documentación oficial de TLS de PyMongo](https://www.mongodb.com/docs/languages/python/pymongo-driver/current/security/tls/).
+
+Si aparece `Configura MONGO_URI y MONGO_DB en el archivo .env.`, alguna variable está vacía antes de intentar la conexión: revisa el archivo `.env` junto a `api.py`, guarda y reinicia Uvicorn. El ajuste de certificados no corrige una configuración vacía, una contraseña incorrecta, un problema DNS ni una IP sin acceso en Atlas.
 
 ## Ejecutar: se necesitan dos terminales
 

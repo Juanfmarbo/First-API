@@ -18,6 +18,7 @@ from pathlib import Path
 from statistics import median
 from typing import Literal
 
+import certifi
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
@@ -122,8 +123,12 @@ def obtener_coleccion():
         )
 
     if cliente is None:
+        # Atlas usa certificados de confianza, como en el notebook del segundo corte.
+        # certifi ya se instala con requests. Las conexiones locales conservan sus opciones.
+        certificados = certifi.where() if MONGO_URI.startswith("mongodb+srv://") else None
         cliente = MongoClient(
             MONGO_URI,
+            tlsCAFile=certificados,
             serverSelectionTimeoutMS=8000,
             connectTimeoutMS=8000,
             socketTimeoutMS=15000,

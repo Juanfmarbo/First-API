@@ -10,11 +10,12 @@ En el backend, `return` entrega un resultado que FastAPI convierte en una respue
 
 ## 2. Qué importamos y para qué
 
-Las dependencias directas son las siete de `requirements.txt`. Pydantic se instala como dependencia de FastAPI.
+Las dependencias directas son las siete de `requirements.txt`. Pydantic se instala como dependencia de FastAPI y `certifi` como dependencia de `requests`. Este último también se utilizaba en el notebook del segundo corte.
 
 | Importación o herramienta | Uso en este proyecto |
 |---|---|
 | `pymongo` | `MongoClient` conecta con MongoDB; sus excepciones permiten manejar fallas. |
+| `certifi` | `where()` devuelve la ruta al archivo de certificados de confianza usado al conectar con Atlas mediante una URI SRV. |
 | `fastapi` | Define rutas, recibe parámetros, comparte filtros y genera respuestas. |
 | `pydantic` | `BaseModel`, `Field` y validadores describen las reglas de un registro nuevo. |
 | `requests` | Envía solicitudes GET y POST desde el dashboard. |
@@ -47,6 +48,8 @@ El archivo está dividido en configuración, preparación de datos, filtros, rut
 | `datos_invalidos`, `error_mongodb` | Devuelven errores comprensibles sin exponer la conexión privada. |
 
 `obtener_coleccion` conserva una conexión reutilizable en `cliente`. Si se indica una colección, la respeta. En caso contrario busca las colecciones conocidas. El diccionario `ALIAS_CLASE` traduce, por ejemplo, `metodo` a `metodo_descubrimiento` al responder; no reescribe la colección original.
+
+Para una URI que empieza por `mongodb+srv://`, la variable `certificados` contiene la ruta que devuelve `certifi.where()`. `tlsCAFile` indica a `MongoClient` dónde están esos certificados de confianza. Esto conserva el ajuste de conexión del notebook y mantiene la validación del servidor. Con una URI local `mongodb://`, el valor queda en `None` y se conservan sus opciones originales.
 
 MongoDB utiliza un identificador `_id` que puede ser un `ObjectId`. `str(...)` lo convierte a texto para incluirlo en JSON. En Python, `None` significa dato ausente; en JSON se representa como `null`. Esa ausencia se conserva y no se transforma en cero.
 
