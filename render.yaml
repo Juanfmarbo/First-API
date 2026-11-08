@@ -15,3 +15,7 @@ services:
         sync: false
       - key: MONGO_DB
         value: proyecto_segundo_corte
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MODELO_IA
+        value: gemini-3.6-flash

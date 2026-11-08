@@ -96,10 +96,43 @@ Las 12 comprobaciones de respuesta se distinguen de las acciones observadas en e
 
 Estas dos capturas creadas durante la verificación permanecen como registros manuales, con magnitudes desconocidas. No son observaciones astronómicas y quedan fuera del filtro NASA. El total de la colección y el total NASA pueden diferir porque también existen capturas manuales.
 
-## 5. Alcance de la entrega técnica
+## 5. Extra de Gemini: verificación local del 8 de noviembre de 2026
 
-La API y el dashboard están publicados y verificados. Se comprobaron lectura, filtros, paginación y creación persistente desde la interfaz pública, completando el recorrido dashboard → API → Atlas. La implementación y el despliegue están listos para entregar y sustentar.
+La integración de `POST /preguntar` y la cuarta pestaña del dashboard se comprobó
+el **8 de noviembre de 2026 a las 10:19:12, hora de Bogotá**, con **20 métodos de
+prueba automatizados, 39 subcasos parametrizados incluidos, 0 fallos y 0 errores**.
+Los subcasos forman parte de esos métodos; no se suman como una suite separada.
 
-El alcance de cada fase queda documentado por separado: integración local, confirmación del usuario en Mac, verificación de la API pública y verificación del dashboard público. La sustentación, la calificación y el bono corresponden a la evaluación académica del docente.
+Las respuestas de Google y las consultas de datos estuvieron **simuladas**.
+Se usaron FastAPI `TestClient` y Streamlit `AppTest` para ejecutar la API y la
+interfaz reales con esas dependencias externas sustituidas. Esta fase no consumió
+una clave real, no llamó a Google y no consultó ni modificó MongoDB.
+
+| Comprobación | Resultado |
+|---|---|
+| Ruta y contrato | `/preguntar` aparece en OpenAPI y devuelve `respuesta`, `modelo`, `total_registros` y `tamano_muestra`. |
+| Validación | Se rechazan preguntas vacías, de solo espacios, mayores de 1.000 caracteres, tipos incorrectos y campos adicionales. |
+| Filtros | La muestra y el resumen reciben los mismos filtros validados; se rechazan filtros inválidos. |
+| Alcance de los datos | Un caso ficticio con 1.234 registros y 30 ejemplos conserva la diferencia entre total y muestra en el contexto. |
+| Credenciales | La clave ficticia aparece en la cabecera de autenticación, sin incorporarse a la URL ni al prompt. |
+| Falta de clave | Devuelve `503` antes de consultar datos o llamar a Google. |
+| Texto de Gemini | Se unen las partes de texto final y se excluyen las marcadas como `thought`. |
+| Errores externos | Se comprobaron HTTP 400, 401, 403, 404, 429 y 500, timeout y fallo de conexión, con mensajes propios. |
+| Respuestas no utilizables | JSON inválido, candidatos o partes ausentes, texto vacío, bloqueos y truncamiento producen errores controlados. |
+| Interfaz | Aparecen las cuatro pestañas y se conservan los indicadores existentes. |
+| Envío del formulario | Una pregunta vacía no se envía; una válida utiliza los filtros y el `timeout=60` configurado. |
+| Estado de la respuesta | Una nueva ejecución de la interfaz conserva la respuesta sin otra llamada; aplicar filtros o fallar una pregunta nueva limpia la anterior. |
+| Errores visibles | La falta de `GEMINI_API_KEY` y el timeout se muestran sin romper las métricas del dashboard. |
+
+**Alcance pendiente de una clave válida:** obtener una respuesta real de Gemini,
+comprobar los permisos y la cuota de la cuenta y contrastar su explicación con las
+estadísticas de la selección. Las pruebas simuladas no acreditan esos puntos.
+Los pasos para activarlo están en `GUIA_DESPLIEGUE.md`.
+
+## 6. Alcance de la entrega técnica
+
+La API y el dashboard del proyecto base están publicados y verificados. Se comprobaron lectura, filtros, paginación y creación persistente desde la interfaz pública, completando el recorrido dashboard → API → Atlas. El extra de Gemini está implementado y comprobado con servicios simulados; requiere activar la clave y verificar una respuesta real antes de presentarlo como operativo.
+
+El alcance de cada fase queda documentado por separado: integración local, confirmación del usuario en Mac, verificación de la API pública, verificación del dashboard público y pruebas locales de Gemini. La sustentación, la calificación y el bono corresponden a la evaluación académica del docente.
 
 El plan de pruebas manuales para repetir la demostración está en `GUIA_SUSTENTACION.md`. La instalación y los comandos se encuentran en `README.md`.

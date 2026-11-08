@@ -2,13 +2,17 @@
 
 El README docente contempla el bono por desplegar la API y/o el dashboard en la nube y entregar la URL pública. El proyecto dispone de dos enlaces: uno para la API en Render y otro para el dashboard en Streamlit Community Cloud. Los datos continúan en MongoDB Atlas.
 
-## Estado real al 2 de noviembre de 2026
+## Proyecto base: estado comprobado al 2 de noviembre de 2026
 
 La **API está desplegada y verificada** en [https://exoplanetas-api-juanfmarbo.onrender.com](https://exoplanetas-api-juanfmarbo.onrender.com). El **dashboard público está disponible y verificado** en [https://exoplanetasproyecto.streamlit.app/](https://exoplanetasproyecto.streamlit.app/) y abre sin iniciar sesión. Se comprobaron las tres pestañas, las cuatro preguntas con sus gráficas, filtros, paginación y creación desde el formulario público, con persistencia en Atlas.
 
 El servicio de Render es `exoplanetas-api-juanfmarbo`, plan **Free**, región **Virginia**. El despliegue utilizado en la verificación inicial, `dep-dbkeqjl9fdbs739v25og`, del commit `54e134e04deed0487f7b5775f107ef1d17133c32`, terminó el **2 de noviembre de 2026 a las 15:07:50, hora de Bogotá**. Su estado se comprobó como `live`; además se verificaron las respuestas de la API y la conexión con Atlas.
 
 Las instrucciones siguientes permiten mantener o reproducir la configuración de los servicios publicados. El detalle de las verificaciones, separado por entorno y etapa, está en `PRUEBAS_REALIZADAS.md`.
+
+### Ampliación de Gemini del 8 de noviembre de 2026
+
+El código incorpora la cuarta pestaña **Pregúntale a tus datos** y `POST /preguntar`. La integración está implementada y requiere una clave de Gemini configurada en el backend para realizar una llamada real. La verificación del proyecto base descrita arriba no acredita esta llamada. La activación se realiza en el servicio existente de Render, siguiendo el apartado siguiente.
 
 ## 1. Antes de comenzar
 
@@ -53,6 +57,8 @@ Estos campos corresponden a la [referencia oficial de Blueprints](https://render
 
 `render.yaml` conserva una plantilla reproducible del backend. Existe una diferencia explícita: la plantilla propone un chequeo HTTP en `/`, mientras que el servicio publicado tiene la ruta vacía y utiliza TCP. Tener el archivo en GitHub no vincula automáticamente el servicio a un Blueprint. **Continúa con la API existente; no crees otra desde New → Blueprint.**
 
+La plantilla también declara `GEMINI_API_KEY` con `sync: false` y `MODELO_IA` con `gemini-3.6-flash`. Editar estas entradas en GitHub no modifica las variables del servicio existente: añádelas en **Environment** de Render. `sync: false` deja el valor privado fuera del archivo.
+
 Si en el futuro se decide gestionar el servicio mediante un Blueprint, primero hay que identificar el recurso existente y revisar qué cambios propone Render. A partir de ese momento, las sincronizaciones pueden aplicar la configuración del archivo al servicio. El procedimiento está en [Render Blueprints](https://render.com/docs/infrastructure-as-code).
 
 ### Variables de la API
@@ -62,12 +68,32 @@ Si en el futuro se decide gestionar el servicio mediante un Blueprint, primero h
 | `MONGO_URI` | Conexión privada introducida en **Environment** de Render. |
 | `MONGO_DB` | `proyecto_segundo_corte`; revisar que esté definido en el servicio. |
 | `MONGO_COLLECTION` | Se omite para utilizar la detección automática de la API. |
+| `GEMINI_API_KEY` | Clave privada de Google AI Studio para habilitar las preguntas de IA. |
+| `MODELO_IA` | `gemini-3.6-flash`; también es el valor predeterminado del código. |
 
 Introduce la conexión como valor de `MONGO_URI`, sin escribir `MONGO_URI=` delante. La API busca la primera colección con documentos entre `exoplanetas_presentacion`, `exoplanetas_clase` y `exoplanetas`. Si necesitas una colección específica, agrega `MONGO_COLLECTION` en **Environment** con su nombre real.
 
 En la plantilla, `sync: false` permite solicitar el secreto durante una creación mediante Blueprint, sin guardarlo en GitHub. Para un servicio creado directamente, configura el valor en **Environment**. Si lo corriges después, elige **Save and deploy**. La opción **Save only** guarda el cambio, pero el proceso no lo utiliza hasta el siguiente despliegue. Consulta [variables y secretos en Render](https://render.com/docs/configure-environment-variables).
 
 El `.env` de tu Mac no se copia automáticamente al servicio. Render proporciona las variables directamente al proceso, por lo que no necesitas subir ese archivo.
+
+### Activar Gemini en la API existente
+
+1. Abre [Google AI Studio → API keys](https://aistudio.google.com/apikey) y obtén una clave para tu proyecto de Google.
+2. Abre el servicio **exoplanetas-api-juanfmarbo** en Render y entra en **Environment**.
+3. Añade `GEMINI_API_KEY`. En el valor, introduce únicamente la clave, sin comillas añadidas y sin el texto `GEMINI_API_KEY=`.
+4. Añade `MODELO_IA` con el valor `gemini-3.6-flash`. Este nombre coincide con el ejemplo de clase y está documentado por [Google](https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash?hl=en).
+5. Guarda y despliega la configuración. Espera a que la nueva ejecución de la API esté disponible.
+6. Abre la pestaña **Pregúntale a tus datos** del dashboard. Selecciona **Solo catálogo NASA**, pulsa **Aplicar filtros** y pregunta: «¿Cuántos candidatos cumplen radio e insolación y qué significa ese resultado?».
+7. Contrasta la respuesta con los indicadores y la primera gráfica de la misma selección.
+
+La clave se configura en **Render**, porque `api.py` llama a Google. Los secretos de Streamlit mantienen `API_BASE_URL`; la clave de Gemini y la conexión de MongoDB permanecen en el backend. `requirements.txt` conserva las siete dependencias del proyecto y la llamada utiliza `requests`.
+
+El modelo se puede cambiar mediante `MODELO_IA` si Google ofrece otra versión compatible y la cuenta tiene acceso a ella. La existencia del nombre en la documentación no garantiza la cuota ni los permisos de una clave concreta: eso se comprueba al hacer una solicitud real.
+
+Para una ejecución completamente local, configura `GEMINI_API_KEY` y, si hace falta, `MODELO_IA` en el `.env` junto a `api.py`. Reinicia Uvicorn después de guardar. La plantilla `.env.example` permanece sin claves reales.
+
+**Comprobación alternativa desde `/docs`:** abre `POST /preguntar`, elige `origen=nasa` y envía `{"pregunta": "¿Cuántos candidatos cumplen los criterios del proyecto?"}`. Una respuesta correcta incluye `respuesta`, `modelo`, `total_registros` y `tamano_muestra`. `/salud` comprueba MongoDB; por sí solo no confirma que Gemini funcione.
 
 La URL HTTPS verificada de este servicio es [https://exoplanetas-api-juanfmarbo.onrender.com](https://exoplanetas-api-juanfmarbo.onrender.com). Si se crea otro servicio en el futuro, utiliza la dirección que realmente entregue Render; el nombre por sí solo no garantiza la URL.
 
@@ -119,13 +145,13 @@ La URL apunta a la raíz del servicio publicado: no agregues `/docs`, `/salud` n
 
 Conserva las comillas de TOML y no coloques la clave dentro de una sección como `[api]`. Streamlit expone los secretos del nivel principal como variables de entorno, de modo que el `os.getenv` de `dashboard.py` recibe el valor. Consulta [gestión de secretos de Streamlit](https://docs.streamlit.io/develop/concepts/connections/secrets-management).
 
-El dashboard utiliza únicamente la URL de la API. La conexión y la contraseña de MongoDB se configuran en Render.
+El dashboard utiliza únicamente la URL de la API. La conexión de MongoDB y `GEMINI_API_KEY` se configuran en Render.
 
 En una instalación nueva, guarda la configuración y despliega; Streamlit instalará las dependencias de `requirements.txt`. En la aplicación existente, si cambias la URL de la API, actualiza `API_BASE_URL` en los ajustes de secretos y reinicia el dashboard si sigue usando el valor anterior. Véase [secretos en Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
 
 ## 4. Preparar la primera visita y la sustentación
 
-Render Free suspende el servicio después de 15 minutos sin tráfico y puede tardar alrededor de un minuto en arrancar al recibir una nueva solicitud. El dashboard espera 20 segundos por petición, por lo que podría mostrar un mensaje de espera en esa primera visita. Esta limitación está documentada en [Render Free](https://render.com/docs/free).
+Render Free suspende el servicio después de 15 minutos sin tráfico y puede tardar alrededor de un minuto en arrancar al recibir una nueva solicitud. El dashboard configura `timeout=20` en las peticiones habituales, por lo que podría mostrar un mensaje de espera en esa primera visita. Para `/preguntar`, utiliza `timeout=60`; la llamada del backend a Google utiliza `timeout=30`. Son tiempos de espera de conexión y lectura de `requests`, no un cronómetro exacto de toda la operación. La suspensión de Render está documentada en [Render Free](https://render.com/docs/free).
 
 Antes de la demostración:
 
@@ -135,7 +161,7 @@ Antes de la demostración:
 
 La API utiliza una instancia **Free** de Render y la interfaz se publica en [Streamlit Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud). Conserva esos planes. Las instancias Free de Render están sujetas a límites; si la cuenta tiene un medio de pago, ciertos excesos de uso pueden generar cobros. Revisa las condiciones de [Render Free](https://render.com/docs/free) al configurar la cuenta.
 
-## 5. Verificar que el despliegue quedó completo
+## 5. Verificación del proyecto base y activación del extra
 
 La API pública completó **31 comprobaciones correctas y 0 fallos** mediante **12 GET y 1 POST**. Posteriormente se verificó la interfaz pública y se guardó una captura desde su formulario. La comprobación de esa captura utilizó **6 GET y 12 comprobaciones correctas, con 0 fallos**, y terminó a las **15:36:00 del 2 de noviembre de 2026, hora de Bogotá**. El detalle de cada fase está en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
 
@@ -146,14 +172,15 @@ La API pública completó **31 comprobaciones correctas y 0 fallos** mediante **
 | `/datos` | Verificada: paginación y filtros NASA, manual y candidatos. |
 | `/estadisticas` | Verificada: respuestas de las cuatro preguntas y coherencia de conteos. |
 | POST manual de la API | Verificado: HTTP 201, persistencia y exclusión del catálogo NASA. |
-| Dashboard público | Verificado: abre sin login y muestra tres pestañas y las cuatro preguntas con gráficas. |
+| Dashboard público, versión del 2 de noviembre | Verificado: abre sin login y muestra sus tres pestañas originales y las cuatro preguntas con gráficas. |
 | Filtros del dashboard | Verificados: NASA muestra 6.375 registros; candidatos muestra 27, todos evaluables. |
 | Paginación del dashboard | Verificada: la selección de 27 candidatos ocupa páginas de 25 y 2 filas. |
 | Creación desde el formulario público | Verificada: mensaje de éxito, filtro automático por nombre y origen manual, una fila en el catálogo y persistencia comprobada mediante la API. |
+| Extra de Gemini, añadido el 8 de noviembre | Implementado; requiere configurar la clave y comprobar una respuesta real con los pasos de activación. Las pruebas específicas se detallan en `PRUEBAS_REALIZADAS.md`. |
 
 Para la creación, utiliza un nombre de prueba reconocible y los campos obligatorios. Deja como desconocidas las magnitudes que no correspondan a una observación real. El backend identifica esas capturas como **Registro manual del proyecto**. El catálogo NASA puede consultarse por separado con el filtro de origen.
 
-Las dos URLs están disponibles y el recorrido completo de consulta y creación está verificado. La implementación y el despliegue quedan listos para entregar y sustentar. El README docente permite presentar la API y/o el dashboard; la sustentación, la nota y la asignación del bono corresponden a la evaluación del docente.
+Las dos URLs están disponibles y el recorrido completo de consulta y creación está verificado. Para presentar también el extra de Gemini, completa su activación y verifica una pregunta real. El README docente permite presentar la API y/o el dashboard; la sustentación, la nota y la asignación del bono corresponden a la evaluación del docente.
 
 ## 6. Si algo no funciona
 
@@ -166,5 +193,10 @@ Las dos URLs están disponibles y el recorrido completo de consulta y creación 
 | El dashboard intenta usar `localhost` | Que `API_BASE_URL` esté en la raíz de **Secrets**, con la URL pública de Render. |
 | El primer acceso tarda demasiado | Despertar primero la API y volver a abrir el dashboard cuando `/salud` responda. |
 | Hay datos, pero no casos evaluables | Los indicadores `limite_*` de la colección; el borrador puede no incluirlos. |
+| `/preguntar` indica que falta `GEMINI_API_KEY` (`503`) | Añadirla en **Environment** del backend y desplegar la configuración. |
+| La IA informa de clave, permisos o modelo (`503`) | Revisar la clave de AI Studio y `MODELO_IA` en Render; guardar y desplegar los valores corregidos. |
+| La IA devuelve `429` | Revisar la cuota y los límites de la cuenta en Google AI Studio. |
+| La IA devuelve `504` | La llamada a Gemini agotó el tiempo de espera; volver a intentarlo con una pregunta concreta. |
+| La IA devuelve `502` | Leer el mensaje propio de la API: hubo un error de conexión, formato o contenido utilizable en la respuesta de Google. |
 
 Los errores de conexión deben resolverse conservando la verificación de certificados TLS. La documentación del código y de los criterios del proyecto está en `GUIA_CODIGO.md` y `GUIA_SUSTENTACION.md`.

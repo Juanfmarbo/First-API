@@ -2,13 +2,17 @@
 
 ## Estado que podemos demostrar
 
-El [dashboard público](https://exoplanetasproyecto.streamlit.app/) abre sin login y muestra las tres pestañas, las cuatro preguntas con gráficas, filtros y paginación verificados. Su formulario también se comprobó: una captura manual se guardó, apareció en el catálogo y se verificó mediante la API. Están disponibles la [API pública en Render](https://exoplanetas-api-juanfmarbo.onrender.com), su [documentación](https://exoplanetas-api-juanfmarbo.onrender.com/docs) y la respuesta de [salud y conexión con Atlas](https://exoplanetas-api-juanfmarbo.onrender.com/salud). La implementación y el despliegue están listos para la entrega técnica y la sustentación.
+El [dashboard público](https://exoplanetasproyecto.streamlit.app/) abre sin login. El 2 de noviembre se verificaron las tres pestañas originales, las cuatro preguntas con gráficas, los filtros y la paginación. Su formulario también se comprobó: una captura manual se guardó, apareció en el catálogo y se verificó mediante la API. Están disponibles la [API pública en Render](https://exoplanetas-api-juanfmarbo.onrender.com), su [documentación](https://exoplanetas-api-juanfmarbo.onrender.com/docs) y la respuesta de [salud y conexión con Atlas](https://exoplanetas-api-juanfmarbo.onrender.com/salud).
+
+El **8 de noviembre** se añadió la cuarta pestaña **Pregúntale a tus datos**, con Gemini. Su integración está implementada; para demostrar una respuesta real hay que configurar `GEMINI_API_KEY` en Render y comprobarla antes de la exposición. El registro de pruebas distingue las respuestas simuladas de las llamadas reales.
 
 Para la demostración, abre primero la API y espera su respuesta si Render necesita arrancar. Después abre el dashboard público. La copia local queda como alternativa: si apunta a Render mediante `API_BASE_URL`, basta con ejecutar Streamlit en el equipo. Las pruebas realizadas y sus límites están en `PRUEBAS_REALIZADAS.md`.
 
 ## 1. Qué hicimos
 
 > Continuamos el proyecto del segundo corte sobre exoplanetas con datos de NASA. Los datos limpios se guardan en MongoDB Atlas. Creamos una API con FastAPI para consultarlos y agregar registros, y un dashboard con Streamlit para utilizar esas funciones desde el navegador.
+
+> Como ampliación, añadimos una pregunta en lenguaje natural. Nuestra API prepara las estadísticas de la selección y una muestra pequeña, las envía a Gemini mediante otra API REST y muestra su explicación en el dashboard.
 
 Antes de presentar, consulta los conteos actuales y selecciona **Solo catálogo NASA** para explicar resultados del catálogo. Las capturas técnicas de verificación se identifican como manuales y no representan observaciones astronómicas. El registro de pruebas distingue la integración local, la confirmación del usuario en Mac, la API pública y la interfaz pública.
 
@@ -23,6 +27,17 @@ Antes de presentar, consulta los conteos actuales y selecciona **Solo catálogo 
 Para crear un registro, el formulario envía un `POST`. Pydantic comprueba sus campos y el backend lo guarda solo si cumple las reglas. Pydantic viene como dependencia de FastAPI.
 
 **La conexión a MongoDB pertenece al backend.** El dashboard se comunica con la API y no necesita la contraseña de Atlas.
+
+### Recorrido de una pregunta a Gemini
+
+1. El usuario aplica los filtros y escribe su pregunta en **Pregúntale a tus datos**.
+2. El dashboard envía un `POST /preguntar` con el texto en JSON y los filtros en la URL.
+3. `Pregunta`, que hereda de `BaseModel`, rechaza texto vacío o mayor de 1.000 caracteres.
+4. La API reutiliza sus estadísticas completas y obtiene hasta 30 registros como muestra. Añade la descripción del proyecto y sus criterios.
+5. `requests.post` envía ese contexto al endpoint `generateContent` de Gemini. La clave se obtiene de una variable de entorno del backend.
+6. La API comprueba la respuesta de Google y devuelve el texto. Streamlit lo conserva en la sesión para que otra interacción no vuelva a enviar la misma solicitud automáticamente.
+
+Este `POST` procesa una pregunta. No inserta documentos en MongoDB ni ejecuta instrucciones generadas por la IA. Al aplicar filtros, pulsar **Actualizar datos** o mostrar automáticamente el registro recién creado se limpia la respuesta anterior, para volver a consultar sobre los datos actuales.
 
 ## Criterios de las cuatro preguntas
 
@@ -46,10 +61,13 @@ La interfaz permite separar registros NASA y manuales. Los registros de demostra
 3. **Estadísticas:** explicar qué mide una gráfica, sus unidades y los datos incluidos.
 4. **Validación:** enviar una entrada inválida desde `/docs` y explicar el mensaje recibido.
 5. **Creación:** agregar un registro de prueba válido desde el dashboard y volver a consultarlo.
-6. **Código:** mostrar una consulta del backend, su validación y una llamada del dashboard.
-7. **GitHub:** mostrar el historial y explicar por qué `.env` no está publicado.
+6. **Gemini, con la clave ya configurada:** preguntar por los candidatos de la selección y contrastar la explicación con la primera gráfica. Después cambiar un filtro y explicar por qué hay que volver a preguntar.
+7. **Código:** mostrar una consulta del backend, su validación, una llamada del dashboard y la solicitud REST a Gemini.
+8. **GitHub:** mostrar el historial y explicar por qué `.env` no está publicado.
 
 Prepara el registro de demostración con un nombre reconocible. Explica que es una prueba y evita presentarlo como un descubrimiento real. No abras la cadena de conexión ni la contraseña durante la exposición.
+
+Para el extra de IA, practica preguntas que se puedan comprobar: «¿Cuántos cumplen radio e insolación?», «¿Cuál de los candidatos con distancia conocida está más cerca?» o «¿Por qué hay datos sin información suficiente?». Si preguntas por un planeta específico, filtra primero por su nombre. Explica que los totales vienen de toda la selección y que los 30 ejemplos no representan todos sus registros. Contrasta cualquier respuesta del modelo con los datos visibles.
 
 ## 4. Preguntas para practicar
 
@@ -58,7 +76,7 @@ Prepara el registro de demostración con un nombre reconocible. Explica que es u
 | ¿Qué es una API? | Una interfaz que define qué solicitudes recibe el backend y cómo responde. |
 | ¿Qué es un endpoint? | Una ruta de la API que realiza una operación concreta. |
 | ¿Para qué sirve GET? | Para consultar datos. |
-| ¿Para qué sirve POST? | En este proyecto, para crear un documento nuevo. |
+| ¿Para qué sirve POST? | Envía datos para que el servidor los procese. `/datos` crea un registro y `/preguntar` solicita una explicación de IA. |
 | ¿Qué diferencia hay entre filtro y agregación? | El filtro selecciona documentos; la agregación calcula un resumen de un conjunto de documentos. |
 | ¿Por qué validar también en la API? | Porque recibe solicitudes desde el dashboard, `/docs` y otros clientes. Debe comprobarlas todas. |
 | ¿Por qué dos terminales al ejecutar todo localmente? | Una mantiene activo FastAPI y la otra ejecuta Streamlit. Si el dashboard usa la API de Render, el backend ya se ejecuta allí. |
@@ -68,6 +86,12 @@ Prepara el registro de demostración con un nombre reconocible. Explica que es u
 | ¿Qué diferencia hay entre Git y GitHub? | Git registra versiones; GitHub aloja el repositorio remoto. |
 | ¿Qué hace .gitignore? | Excluye archivos nuevos del seguimiento, como `.env` y `venv/`. No elimina secretos ya publicados. |
 | ¿Qué aporta el entorno virtual? | Mantiene juntas las dependencias de este proyecto y separadas de otras instalaciones. |
+| ¿Por qué Gemini recibe un resumen además de 30 registros? | Porque una muestra permite mostrar ejemplos, pero no calcular correctamente los totales de toda la selección. La API calcula esos totales antes de llamar al modelo. |
+| ¿Gemini se conecta a MongoDB? | No. Nuestra API consulta MongoDB y envía a Gemini el contexto preparado. |
+| ¿Dónde está la clave de Gemini? | En el entorno del backend: `.env` en local o **Environment** de Render. |
+| ¿Por qué usamos `requests`? | Gemini expone una API REST; podemos llamarla con la misma librería que ya utilizamos para comunicar el dashboard con FastAPI. |
+| ¿Qué pasa si no hay clave o se agota la cuota? | La API devuelve un mensaje controlado. El catálogo, las gráficas y el formulario de creación siguen siendo funciones independientes. |
+| ¿La IA demuestra que un planeta es habitable? | No. Explica nuestros criterios exploratorios y las estadísticas disponibles; cumplir los intervalos no demuestra habitabilidad. |
 
 ## 5. Pruebas manuales y evidencia
 
@@ -87,6 +111,9 @@ Esta tabla es un **plan para repetir la demostración**. Las verificaciones de c
 | Revisar GitHub | No aparecen `.env`, contraseñas ni el entorno virtual. | Lista de archivos. |
 | Repetir la comprobación de la API pública | Consulta, estadísticas y creación funcionan mediante la API de Render. | URL y resultados. |
 | Repetir las operaciones del dashboard público | Sus filtros y formulario se comunican con la API y guardan correctamente. | URL de Streamlit y resultados observados. |
+| Preguntar a Gemini con una clave válida | Respuesta en español consistente con las estadísticas de los mismos filtros. | Pregunta, respuesta y comparación con los indicadores. |
+| Cambiar la selección después de preguntar | Se limpia la respuesta anterior y la nueva pregunta utiliza los filtros aplicados. | Filtros visibles y respuesta de la nueva selección. |
+| Enviar una pregunta vacía a `/preguntar` | Respuesta `422`; el backend la rechaza antes de llamar a Google. | Respuesta de validación. |
 
 Una gráfica visible necesita cifras comprobables. Un mensaje de creación necesita una consulta posterior que confirme la persistencia.
 
@@ -99,5 +126,7 @@ Una gráfica visible necesita cifras comprobables. Un mensaje de creación neces
 - Sustentación: **0.6**.
 
 Total: **5.0**. La guía permite un bono de hasta **0.3** por despliegue y penaliza las credenciales expuestas. Cada integrante debe poder seguir una solicitud de principio a fin y explicar una decisión técnica.
+
+Gemini es una ampliación posterior indicada por el profesor. Su valoración adicional depende de las instrucciones que dé para este extra; no modifica por sí sola los puntajes de la tabla original.
 
 Fuente de los criterios: `GUIA_PROYECTO_FINAL.md`, material suministrado por el docente.

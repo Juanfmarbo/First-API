@@ -7,7 +7,7 @@ Ejecutar en una terminal distinta de la API:
     python -m streamlit run dashboard.py
 
 Los bloques siguen el recorrido de la pantalla: conexión, filtros,
-indicadores, preguntas del proyecto, catálogo y formulario de creación.
+indicadores, preguntas del proyecto, catálogo, formulario de creación y asistente IA.
 """
 
 import math
@@ -63,16 +63,16 @@ NOMBRES_COLUMNAS = {
 }
 
 
-def pedir_api(ruta, parametros=None, registro=None):
+def pedir_api(ruta, parametros=None, registro=None, espera=20):
     """Hace GET o POST y devuelve un diccionario; ante un error devuelve None."""
     try:
         if registro is None:
             respuesta = requests.get(
-                f"{API}{ruta}", params=parametros, timeout=20
+                f"{API}{ruta}", params=parametros, timeout=espera
             )
         else:
             respuesta = requests.post(
-                f"{API}{ruta}", json=registro, timeout=20
+                f"{API}{ruta}", params=parametros, json=registro, timeout=espera
             )
     except requests.Timeout:
         st.error(
@@ -97,6 +97,13 @@ def pedir_api(ruta, parametros=None, registro=None):
         return None
 
     if not respuesta.ok:
+        if ruta == "/preguntar":
+            detalle = contenido.get("detail") if isinstance(contenido, dict) else None
+            st.error(
+                detalle if isinstance(detalle, str)
+                else "No se pudo responder la pregunta. Revisa el texto e inténtalo otra vez."
+            )
+            return None
         mensajes = {
             409: "Ya existe un planeta con ese nombre. Revisa el catálogo antes de crearlo.",
             422: "Hay campos que no cumplen las condiciones del formulario.",
@@ -451,13 +458,65 @@ def mostrar_formulario(metodos):
         st.rerun()
 
 
+def mostrar_ia(filtros):
+    """Envía una pregunta al backend y conserva la respuesta durante la consulta."""
+    st.subheader("🤖 Pregúntale a tus datos")
+    st.write(
+        "Pregunta sobre las cifras de la selección actual o las reglas del proyecto. "
+        "Por ejemplo: ¿cuántos cumplen ambos criterios?, ¿qué método tiene más registros? "
+        "o ¿cuál de los candidatos está más cerca?"
+    )
+    st.caption(
+        "Se envían a Gemini tu pregunta, las estadísticas de toda la selección y una "
+        "muestra de hasta 30 registros. Para consultar un planeta concreto, búscalo "
+        "por nombre en la barra lateral y pulsa Aplicar filtros."
+    )
+    with st.form("formulario_ia"):
+        pregunta = st.text_input(
+            "Escribe tu pregunta", max_chars=1000, key="pregunta_ia",
+            placeholder="¿Cuántos planetas cumplen los criterios del proyecto?",
+        )
+        enviar = st.form_submit_button("Preguntar", type="primary")
+
+    if enviar:
+        st.session_state.pop("respuesta_ia", None)
+        if not pregunta.strip():
+            st.warning("Escribe una pregunta antes de pulsar Preguntar.")
+        else:
+            with st.spinner("Pensando..."):
+                resultado = pedir_api(
+                    "/preguntar", parametros=filtros,
+                    registro={"pregunta": pregunta.strip()}, espera=60,
+                )
+            if resultado is not None:
+                respuesta = resultado.get("respuesta")
+                if isinstance(respuesta, str) and respuesta.strip():
+                    st.session_state["respuesta_ia"] = {
+                        "pregunta": pregunta.strip(), "filtros": dict(filtros),
+                        **resultado,
+                    }
+                else:
+                    st.error("La API no devolvió una respuesta de texto válida.")
+
+    guardada = st.session_state.get("respuesta_ia")
+    if guardada and guardada["filtros"] == filtros:
+        st.write(f"**Pregunta respondida:** {guardada['pregunta']}")
+        st.success(guardada["respuesta"])
+        st.caption(
+            f"Modelo: {guardada['modelo']} · Resumen de "
+            f"{numero(guardada['total_registros'])} registros · "
+            f"{guardada['tamano_muestra']} ejemplos enviados. "
+            "Comprueba las cifras con las tablas y gráficas del proyecto."
+        )
+
+
 # --------------------- Inicio del recorrido de la pantalla ---------------------
 
 st.title("🪐 Explorador de exoplanetas")
 st.write("### ¿Hay otras Tierras y qué tan lejos están?")
 st.write(
-    "Explora los registros del proyecto, compara las cuatro preguntas "
-    "y agrega nuevos datos con su procedencia identificada."
+    "Explora los registros del proyecto, compara las cuatro preguntas, "
+    "agrega nuevos datos con su procedencia identificada y pregúntale a Gemini."
 )
 
 if "filtros" not in st.session_state:
@@ -475,6 +534,7 @@ for advertencia in opciones.get("advertencias", []):
     st.warning(advertencia)
 # Si se añadió un registro, sincronizamos filtros y widgets antes de crearlos.
 if "buscar_recien_creado" in st.session_state:
+    st.session_state.pop("respuesta_ia", None)
     nombre_nuevo = st.session_state.pop("buscar_recien_creado")
     st.session_state["filtros"] = {"nombre": nombre_nuevo, "origen": "manual"}
     st.session_state["f_nombre"] = nombre_nuevo
@@ -520,7 +580,9 @@ with st.sidebar:
                 filtros.update({"anio_min": int(anio_minimo), "anio_max": int(anio_maximo)})
             st.session_state["filtros"] = filtros
             st.session_state["pagina"] = 1
-    st.button("Actualizar datos")
+            st.session_state.pop("respuesta_ia", None)
+    if st.button("Actualizar datos"):
+        st.session_state.pop("respuesta_ia", None)
     st.caption("Para ver únicamente el catálogo original, elige Solo catálogo NASA.")
 
 filtros = st.session_state["filtros"]
@@ -545,13 +607,17 @@ if filtros.get("solo_candidatos"):
 if resumen["total_coleccion"] == 0:
     st.info("La colección está vacía. El formulario sigue disponible para crear el primer registro.")
 
-preguntas, catalogo, agregar = st.tabs(["Preguntas del proyecto", "Catálogo", "Agregar registro"])
+preguntas, catalogo, agregar, ia = st.tabs([
+    "Preguntas del proyecto", "Catálogo", "Agregar registro", "Pregúntale a tus datos",
+])
 with preguntas:
     mostrar_preguntas(resumen)
 with catalogo:
     mostrar_catalogo(filtros, resumen)
 with agregar:
     mostrar_formulario(metodos)
+with ia:
+    mostrar_ia(filtros)
 
 st.caption(
     "Fuente del catálogo: NASA Exoplanet Archive, tabla pscomppars. "
