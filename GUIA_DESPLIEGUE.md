@@ -14,6 +14,8 @@ Las instrucciones siguientes permiten mantener o reproducir la configuración de
 
 El código incorpora la cuarta pestaña **Pregúntale a tus datos** y `POST /preguntar`. La integración está implementada y requiere una clave de Gemini configurada en el backend para realizar una llamada real. La verificación del proyecto base descrita arriba no acredita esta llamada. La activación se realiza en el servicio existente de Render, siguiendo el apartado siguiente.
 
+El despliegue `dep-dbo98be7bikc7389t25g`, correspondiente al commit `a4ae5d07c1b4c0c17b5b7607a591a1e47f7d4a65`, quedó **live el 8 de noviembre a las 10:25:43, hora de Bogotá**. Se verificaron la API 1.1.0 y la cuarta pestaña pública. El formulario mostró el mensaje de falta de `GEMINI_API_KEY`; queda añadirla y comprobar una respuesta real.
+
 ## 1. Antes de comenzar
 
 En el repositorio [Juanfmarbo/First-API](https://github.com/Juanfmarbo/First-API), confirma que la rama `main` contiene `api.py`, `dashboard.py`, `requirements.txt`, `.python-version` y `render.yaml`. Si estos cambios siguen únicamente en otra rama, primero deben incorporarse a `main`.
@@ -27,6 +29,8 @@ El archivo `.python-version` selecciona Python **3.12**. Render permite indicar 
 ### Continuar con el servicio existente
 
 La API ya utiliza el servicio `exoplanetas-api-juanfmarbo`. Continúa con él para revisar variables, registros y nuevos despliegues. El dashboard se publica por separado en Streamlit.
+
+Después de publicar código, comprueba en **Deploys** que el commit nuevo esté activo. Durante la ampliación del 8 de noviembre no apareció un despliegue automático y se inició uno sobre la última versión de `main`. Si vuelve a ocurrir, utiliza **Manual Deploy → Deploy latest commit** en el mismo servicio. Espera el estado **Live** y verifica `/docs`; subir a GitHub por sí solo no acredita que Render ya ejecute el cambio. Véase [despliegues de Render](https://render.com/docs/deploys).
 
 Solo cuando todavía no exista el servicio:
 

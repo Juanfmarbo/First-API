@@ -20,6 +20,8 @@ El despliegue de la API utilizado en su verificación inicial terminó el **2 de
 
 Está implementada la cuarta pestaña **Pregúntale a tus datos** y la ruta **`POST /preguntar`**, siguiendo la llamada REST enseñada en clase. Para obtener respuestas reales de Gemini hay que configurar **`GEMINI_API_KEY` en el backend**. Esta ampliación se distingue de las verificaciones anteriores: una prueba con respuestas simuladas no acredita una llamada real a Google. El alcance de las comprobaciones se registra en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
 
+La versión **1.1.0** quedó activa en Render el **8 de noviembre a las 10:25:43, hora de Bogotá**, con el commit `a4ae5d07c1b4c0c17b5b7607a591a1e47f7d4a65`. Se comprobó la nueva pestaña en la web pública y se envió una pregunta desde su formulario. La API informó que falta `GEMINI_API_KEY`; ese es el paso pendiente de activación. Las consultas públicas de salud y estadísticas respondieron correctamente, con 6.375 registros NASA y 27 candidatos.
+
 ## Cómo se conectan las partes
 
 El usuario utiliza el dashboard. El dashboard envía solicitudes HTTP a la API. La API valida las solicitudes, consulta o escribe en MongoDB y devuelve una respuesta JSON. El dashboard presenta esa respuesta como una tabla, indicadores o gráficas.

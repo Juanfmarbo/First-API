@@ -129,10 +129,43 @@ comprobar los permisos y la cuota de la cuenta y contrastar su explicación con 
 estadísticas de la selección. Las pruebas simuladas no acreditan esos puntos.
 Los pasos para activarlo están en `GUIA_DESPLIEGUE.md`.
 
-## 6. Alcance de la entrega técnica
+## 6. Extra de Gemini: despliegue y formulario públicos
 
-La API y el dashboard del proyecto base están publicados y verificados. Se comprobaron lectura, filtros, paginación y creación persistente desde la interfaz pública, completando el recorrido dashboard → API → Atlas. El extra de Gemini está implementado y comprobado con servicios simulados; requiere activar la clave y verificar una respuesta real antes de presentarlo como operativo.
+El commit `a4ae5d07c1b4c0c17b5b7607a591a1e47f7d4a65` se desplegó en el servicio
+existente de Render. El despliegue `dep-dbo98be7bikc7389t25g` quedó **live el
+8 de noviembre de 2026 a las 10:25:43, hora de Bogotá**. La API informa la
+versión **1.1.0**.
 
-El alcance de cada fase queda documentado por separado: integración local, confirmación del usuario en Mac, verificación de la API pública, verificación del dashboard público y pruebas locales de Gemini. La sustentación, la calificación y el bono corresponden a la evaluación académica del docente.
+Entre las **10:26:27 y las 10:26:34 de Bogotá** se hicieron **3 solicitudes GET**
+de comprobación y se verificaron **6 condiciones correctas**, sin POST en ese
+verificador:
+
+| Consulta | Resultado observado |
+|---|---|
+| `GET /openapi.json` | HTTP 200; documenta `POST /preguntar` y la versión 1.1.0. |
+| `GET /salud` | HTTP 200; `estado: ok`, colección `exoplanetas_presentacion` y 6.379 documentos. |
+| `GET /estadisticas?origen=nasa` | HTTP 200; 6.375 registros NASA, 5.693 evaluables, 27 candidatos, 682 sin información suficiente y 462 con algún extremo. |
+
+Por separado, se abrió la web pública, se reactivó tras la suspensión por
+inactividad y se comprobó que presenta las cuatro pestañas. Se aplicó el filtro
+**Solo catálogo NASA** y se envió una sola pregunta desde **Pregúntale a tus datos**:
+
+> ¿Cuántos planetas cumplen los criterios de radio e insolación y qué significa ese resultado?
+
+La interfaz mostró el mensaje del backend:
+
+> Falta configurar GEMINI_API_KEY en el servidor de la API (Render o .env local).
+
+Esto verifica que el formulario público llega a la nueva ruta y presenta el
+diagnóstico previsto de configuración. **No es una respuesta generada por Gemini**:
+la clave todavía no está configurada y el backend detiene esta operación antes de
+llamar a Google. Los indicadores permanecieron visibles con la selección NASA.
+Durante esta ampliación no se crearon registros de prueba en MongoDB.
+
+## 7. Alcance de la entrega técnica
+
+La API y el dashboard del proyecto base están publicados y verificados. Se comprobaron lectura, filtros, paginación y creación persistente desde la interfaz pública, completando el recorrido dashboard → API → Atlas. El extra de Gemini está implementado, publicado y comprobado con servicios simulados; su formulario público presenta correctamente la falta de clave. Requiere activar esa clave y verificar una respuesta real antes de presentarlo como operativo.
+
+El alcance de cada fase queda documentado por separado: integración local, confirmación del usuario en Mac, verificación de la API pública, verificación del dashboard público, pruebas locales de Gemini y comprobación pública de su despliegue y formulario. La sustentación, la calificación y el bono corresponden a la evaluación académica del docente.
 
 El plan de pruebas manuales para repetir la demostración está en `GUIA_SUSTENTACION.md`. La instalación y los comandos se encuentran en `README.md`.
