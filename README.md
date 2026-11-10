@@ -2,7 +2,9 @@
 
 Proyecto final de **Programación Aplicada** que convierte el análisis de exoplanetas del segundo corte en una aplicación web. **MongoDB Atlas** conserva los documentos; **FastAPI** permite consultarlos, calcular estadísticas y crear registros; **Streamlit** presenta filtros, tablas, gráficas y un formulario. El extra de **Gemini** permite hacer preguntas en español sobre la selección de datos.
 
-Este repositorio tiene dos documentos: este README para entender, configurar y usar el proyecto, y [presentacion-sustentacioln.md](presentacion-sustentacioln.md) para estudiar y defender su implementación en detalle. El segundo explica las funciones, las decisiones, los cálculos, el despliegue, las comprobaciones realizadas y las posibles preguntas del profesor.
+La documentación se organiza en tres archivos: este README para entender, configurar y usar el proyecto; [presentacion.md](presentacion.md), con la exposición del proyecto para mostrar en clase; y [presentacion-sustentacioln.md](presentacion-sustentacioln.md), con el material detallado de estudio y defensa.
+
+**[Abrir la presentación para clase](presentacion.md):** arquitectura, tecnologías, datos, programación de la API, cálculos, dashboard, gráficas, Gemini y despliegue, organizados en secciones numeradas con separadores, tablas y fragmentos de código explicados.
 
 ## Acceso al proyecto
 
@@ -63,6 +65,7 @@ Pydantic llega como dependencia de FastAPI y valida los modelos. `certifi` llega
 | [.python-version](.python-version) | Python 3.12, versión validada y utilizada en Render. |
 | [render.yaml](render.yaml) | Plantilla declarativa del servicio de API en Render. |
 | [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) | Configuración de VS Code/Codespaces; usa Python 3.11 y arranca solo Streamlit. Sus diferencias se explican en la sustentación. |
+| [presentacion.md](presentacion.md) | Exposición del proyecto para clase, con explicación directa de su funcionamiento e implementación. |
 | [presentacion-sustentacioln.md](presentacion-sustentacioln.md) | Explicación completa para estudiar, demostrar y defender el proyecto. |
 
 ## Preparación local
@@ -192,6 +195,8 @@ API_BASE_URL = "https://exoplanetas-api-juanfmarbo.onrender.com"
 `.env`, `.streamlit/secrets.toml` y los entornos virtuales están excluidos de Git. `.gitignore` no elimina credenciales ya publicadas: una credencial expuesta debe reemplazarse en su proveedor.
 
 ## Preparar la sustentación
+
+La exposición para mostrar en clase está en [presentacion.md](presentacion.md). Presenta directamente el contenido del proyecto, desde la arquitectura hasta el análisis, las gráficas y Gemini.
 
 Estudia [presentacion-sustentacioln.md](presentacion-sustentacioln.md). Contiene el recorrido función por función, los fundamentos de GET y POST, MongoDB, validación, fórmulas, gráficas, estado de Streamlit, IA, despliegue, verificaciones y un guion con preguntas y respuestas.
 
