@@ -1,352 +1,198 @@
 # First-API: explorador de exoplanetas
 
-Aplicación del proyecto final de Programación Aplicada que continúa el trabajo del segundo corte sobre exoplanetas con datos de NASA. Los datos limpios se guardan en MongoDB Atlas, una API con FastAPI los consulta y un dashboard de Streamlit permite trabajar con ellos desde el navegador.
+Proyecto final de **Programación Aplicada** que convierte el análisis de exoplanetas del segundo corte en una aplicación web. **MongoDB Atlas** conserva los documentos; **FastAPI** permite consultarlos, calcular estadísticas y crear registros; **Streamlit** presenta filtros, tablas, gráficas y un formulario. El extra de **Gemini** permite hacer preguntas en español sobre la selección de datos.
 
-## Proyecto base: estado comprobado al 2 de noviembre de 2026
+Este repositorio tiene dos documentos: este README para entender, configurar y usar el proyecto, y [presentacion-sustentacioln.md](presentacion-sustentacioln.md) para estudiar y defender su implementación en detalle. El segundo explica las funciones, las decisiones, los cálculos, el despliegue, las comprobaciones realizadas y las posibles preguntas del profesor.
 
-**Las funciones del proyecto base y su despliegue están completos y verificados.** El dashboard abre sin iniciar sesión y permite consultar el catálogo, aplicar filtros, recorrer páginas, explorar las cuatro preguntas y guardar registros manuales. Se comprobó el recorrido completo desde el formulario público hasta la API y MongoDB Atlas. La sustentación y la asignación de la nota corresponden al docente.
+## Acceso al proyecto
 
-| Componente | Enlace y estado |
+| Componente | Enlace |
 |---|---|
-| Dashboard público | [Abrir Explorador de exoplanetas](https://exoplanetasproyecto.streamlit.app/) — consulta, filtros, paginación y creación persistente verificados. |
-| API pública | [Abrir API](https://exoplanetas-api-juanfmarbo.onrender.com) — lectura y creación verificadas. |
-| Documentación de la API | [Abrir /docs](https://exoplanetas-api-juanfmarbo.onrender.com/docs). |
-| Conexión con Atlas | [Consultar /salud](https://exoplanetas-api-juanfmarbo.onrender.com/salud) — devolvió `estado: ok`. |
-| Dashboard local | Funcionamiento confirmado por el usuario en su Mac. |
+| Dashboard en Streamlit Community Cloud | [exoplanetasproyecto.streamlit.app](https://exoplanetasproyecto.streamlit.app/) |
+| API en Render | [exoplanetas-api-juanfmarbo.onrender.com](https://exoplanetas-api-juanfmarbo.onrender.com) |
+| Documentación interactiva de la API | [Swagger: /docs](https://exoplanetas-api-juanfmarbo.onrender.com/docs) |
+| Comprobación de conexión con MongoDB | [/salud](https://exoplanetas-api-juanfmarbo.onrender.com/salud) |
+| Código e historial | [Juanfmarbo/First-API](https://github.com/Juanfmarbo/First-API) |
 
-El despliegue de la API utilizado en su verificación inicial terminó el **2 de noviembre de 2026 a las 15:07:50, hora de Bogotá**, sobre el commit [54e134e](https://github.com/Juanfmarbo/First-API/commit/54e134e04deed0487f7b5775f107ef1d17133c32). Se comprobaron **12 solicitudes GET y 1 POST**, con **31 comprobaciones correctas y 0 fallos**. La verificación posterior del dashboard público se documenta de forma separada en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
+La última comprobación pública documentada es del **8 de noviembre de 2026**: API versión **1.1.0**, conexión con Atlas correcta y cuatro pestañas visibles. En esa comprobación, enviar una pregunta devolvió que faltaba `GEMINI_API_KEY` en el backend; se verificó la integración y su diagnóstico, pero **no una respuesta real de Google**. El estado de la clave puede cambiar después de esa fecha. El [apartado de verificación](presentacion-sustentacioln.md#verificacion) diferencia pruebas locales, simuladas y públicas.
 
-### Extra de Gemini añadido el 8 de noviembre de 2026
+## Qué permite hacer
 
-Está implementada la cuarta pestaña **Pregúntale a tus datos** y la ruta **`POST /preguntar`**, siguiendo la llamada REST enseñada en clase. Para obtener respuestas reales de Gemini hay que configurar **`GEMINI_API_KEY` en el backend**. Esta ampliación se distingue de las verificaciones anteriores: una prueba con respuestas simuladas no acredita una llamada real a Google. El alcance de las comprobaciones se registra en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
+- Buscar planetas o estrellas y filtrar por método, años, procedencia y criterios del proyecto.
+- Consultar el catálogo por páginas y descargar como CSV **la página visible**.
+- Responder las cuatro preguntas del segundo corte mediante estadísticas y gráficas.
+- Crear registros identificados como manuales, con validación antes de guardarlos en Atlas.
+- Preguntar a Gemini sobre los datos de la selección y las reglas del proyecto.
 
-La versión **1.1.0** quedó activa en Render el **8 de noviembre a las 10:25:43, hora de Bogotá**, con el commit `a4ae5d07c1b4c0c17b5b7607a591a1e47f7d4a65`. Se comprobó la nueva pestaña en la web pública y se envió una pregunta desde su formulario. La API informó que falta `GEMINI_API_KEY`; ese es el paso pendiente de activación. Las consultas públicas de salud y estadísticas respondieron correctamente, con 6.375 registros NASA y 27 candidatos.
+Las cuatro preguntas son:
 
-## Cómo se conectan las partes
+1. **¿Cuántos planetas parecidos a la Tierra conocemos?** Se buscan radios entre 0,8 y 1,6 radios terrestres e insolaciones entre 0,35 y 1,5 veces la terrestre. Ambos indicadores de límite deben valer `0`.
+2. **¿Qué tan lejos están y cuánto tardaríamos en llegar?** Se convierten parsecs a años luz y se calcula un viaje idealizado a 17 km/s; se muestran hasta diez candidatos más cercanos con distancia conocida.
+3. **¿Qué tan lejos puede “ver” cada método?** Se comparan distancias mínimas, medianas y máximas de los registros disponibles por método. Esto describe el catálogo, no una capacidad instrumental universal.
+4. **¿Qué tan extremos pueden ser?** Se cuentan las categorías Infierno, Congelado, Relámpago y Supergigante, cada una con sus condiciones y datos evaluables.
 
-El usuario utiliza el dashboard. El dashboard envía solicitudes HTTP a la API. La API valida las solicitudes, consulta o escribe en MongoDB y devuelve una respuesta JSON. El dashboard presenta esa respuesta como una tabla, indicadores o gráficas.
+Los candidatos cumplen dos intervalos exploratorios; **no son una demostración de habitabilidad o de vida**. Los datos ausentes no se reemplazan por cero. Las categorías extremas pueden superponerse.
 
-La API es el único componente que se conecta directamente a MongoDB. La contraseña de la base de datos se configura en el entorno del backend. Para la pregunta de IA, la API prepara el contexto de la selección y lo envía a Gemini; después devuelve su respuesta al dashboard. La clave de Gemini también pertenece al backend.
+## Arquitectura y tecnologías
 
-## Qué conserva del segundo corte
+El navegador muestra Streamlit. El proceso de Streamlit usa `requests` para hablar por HTTP con FastAPI. La API valida parámetros, utiliza PyMongo para leer o escribir en Atlas y devuelve JSON. Streamlit organiza las respuestas con pandas y dibuja sus gráficas nativas.
 
-La aplicación mantiene las cuatro preguntas del proyecto:
+Para una pregunta de IA, el backend prepara las reglas del proyecto, las estadísticas de **toda la selección** y los primeros **hasta 30 registros**, ordenados por nombre, como ejemplos. Envía ese contexto a Gemini. Google no recibe acceso directo a MongoDB. Las credenciales de Atlas y Gemini pertenecen al backend.
 
-1. ¿Cuántos planetas parecidos a la Tierra conocemos?
-2. ¿Qué tan lejos están y cuánto tardaríamos en llegar?
-3. ¿Qué tan lejos puede "ver" cada método de descubrimiento?
-4. ¿Qué tan extremos pueden ser los planetas y con qué método se encuentran?
+Se conservan las siete dependencias directas del enfoque trabajado en clase:
 
-Los filtros exploratorios y sus límites se explican en la guía de sustentación. Los registros creados desde la aplicación quedan identificados como **manuales** para distinguirlos del catálogo NASA.
+| Dependencia | Versión fijada | Para qué se usa |
+|---|---|---|
+| `pymongo` | `4.19.0` | Conexión, consultas, agregaciones e inserciones en MongoDB. |
+| `pandas` | `3.1.0` | Tablas, transformación de respuestas y CSV. |
+| `fastapi` | `0.162.0` | Rutas HTTP, parámetros y documentación de la API. |
+| `uvicorn` | `0.54.0` | Servidor que ejecuta FastAPI. |
+| `streamlit` | `1.66.1` | Interfaz, formularios, estado de sesión y gráficas. |
+| `requests` | `2.34.2` | Solicitudes a la API del proyecto y a Gemini. |
+| `python-dotenv` | `1.2.4` | Carga local de variables desde `.env`. |
 
-## Requisitos
+Pydantic llega como dependencia de FastAPI y valida los modelos. `certifi` llega como dependencia de `requests` y aporta certificados para Atlas. Gemini reutiliza `requests`; no se añadió un SDK de IA. Los módulos de la biblioteca estándar de Python tampoco se instalan por separado.
 
-- Python 3.11 o superior.
-- Git y una cuenta en GitHub.
-- VS Code con la extensión de Python, si se sigue el entorno propuesto en clase.
-- Una base de datos y una colección en MongoDB Atlas con los datos limpios del segundo corte.
-- Acceso de red permitido en Atlas para el equipo o servicio donde se ejecute la API.
-- Para activar el extra de IA: una clave de [Google AI Studio](https://aistudio.google.com/apikey) con acceso al modelo configurado.
-
-El proyecto utiliza las siete librerías del archivo entregado en clase:
-
-| Librería | Uso |
+| Archivo | Responsabilidad |
 |---|---|
-| `pymongo` | Conectar el backend con MongoDB y consultar o insertar documentos. |
-| `pandas` | Organizar las respuestas de la API en tablas para mostrarlas. |
-| `fastapi` | Definir las rutas y respuestas del backend. |
-| `uvicorn` | Ejecutar el servidor de la API. |
-| `streamlit` | Construir la interfaz que se abre en el navegador. |
-| `requests` | Enviar solicitudes del dashboard a la API y de la API a Gemini. |
-| `python-dotenv` | Cargar la configuración local desde `.env`. |
+| [api.py](api.py) | MongoDB, normalización, filtros, estadísticas, creación y Gemini. |
+| [dashboard.py](dashboard.py) | Interfaz, consumo de la API, tablas, gráficas, formulario y preguntas. |
+| [requirements.txt](requirements.txt) | Dependencias directas con versiones fijadas. |
+| [.env.example](.env.example) | Plantilla sin credenciales reales. |
+| [.gitignore](.gitignore) | Exclusión de secretos locales, entornos y archivos generados. |
+| [.python-version](.python-version) | Python 3.12, versión validada y utilizada en Render. |
+| [render.yaml](render.yaml) | Plantilla declarativa del servicio de API en Render. |
+| [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) | Configuración de VS Code/Codespaces; usa Python 3.11 y arranca solo Streamlit. Sus diferencias se explican en la sustentación. |
+| [presentacion-sustentacioln.md](presentacion-sustentacioln.md) | Explicación completa para estudiar, demostrar y defender el proyecto. |
 
-Pydantic se instala como dependencia de FastAPI y se utiliza para validar los registros y las preguntas. `certifi` se instala como dependencia de `requests` y aporta certificados de confianza para la conexión con Atlas, como en el notebook del segundo corte. Se mantienen las siete entradas del archivo de requisitos; el extra de Gemini reutiliza `requests`. Los módulos incluidos en Python tampoco requieren una instalación aparte.
+## Preparación local
 
-## Instalación en Mac o Linux
+Se necesita Python, acceso al repositorio y la colección limpia del segundo corte en Atlas. **Usa Python 3.12 para reproducir el entorno validado**. La guía de clase admite Python 3.11 o superior; eso no equivale a haber probado todas esas versiones con estas dependencias.
 
-Abre una terminal dentro de la carpeta del proyecto:
+Para una copia nueva en Mac o Linux:
 
 ```bash
+git clone https://github.com/Juanfmarbo/First-API.git
+cd First-API
 python3 --version
-git --version
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Abre `.env` y completa los valores con la conexión, la base de datos y la colección de tu proyecto. Conserva la plantilla `.env.example` sin contraseñas reales.
+Comprueba la versión antes de crear el entorno. Si tienes varias instalaciones, puedes usar `python3.12 -m venv venv`. Si ya tienes el proyecto, trabaja en su carpeta existente y conserva tu `.env`; no necesitas volver a clonar ni sobrescribirlo.
 
-## Instalación en Windows
-
-Abre PowerShell dentro de la carpeta del proyecto:
+En Windows, los pasos equivalentes del entorno son:
 
 ```powershell
-py --version
-git --version
-py -m venv venv
+py -3.12 -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Completa `.env` con los valores de tu proyecto. Si PowerShell impide activar el entorno, puedes ejecutar el Python del entorno directamente, por ejemplo:
+Si PowerShell bloquea la activación, utiliza directamente `.\venv\Scripts\python.exe` en lugar de `python` en los comandos.
 
-```powershell
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
-```
+### Configuración de .env
 
-Ese mismo prefijo puede sustituir a `python` en los comandos de ejecución siguientes.
+Completa `.env` junto a `api.py`:
 
-## Configuración de .env
-
-| Variable | Valor o uso |
+| Variable | Configuración |
 |---|---|
-| `MONGO_URI` | Tu cadena de conexión real de Atlas. Solo se configura en el backend. |
-| `MONGO_DB` | `proyecto_segundo_corte`. |
-| `MONGO_COLLECTION` | Puedes dejarla vacía para detectar una colección conocida no vacía. |
-| `API_BASE_URL` | `http://localhost:8000` para una API local; `https://exoplanetas-api-juanfmarbo.onrender.com` para utilizar la API publicada. |
-| `GEMINI_API_KEY` | Clave privada de Google AI Studio. Se configura en el backend para habilitar `/preguntar`. |
-| `MODELO_IA` | `gemini-3.6-flash` por defecto, igual que en el ejemplo de clase. |
+| `MONGO_URI` | Cadena de conexión privada de Atlas. |
+| `MONGO_DB` | `proyecto_segundo_corte`, salvo que tu base tenga otro nombre. |
+| `MONGO_COLLECTION` | Nombre explícito; vacío para detección automática. |
+| `API_BASE_URL` | `http://localhost:8000` para backend local o la URL pública de Render. |
+| `GEMINI_API_KEY` | Clave privada de Google AI Studio. |
+| `MODELO_IA` | `gemini-3.6-flash`, predeterminado del código. |
 
-La detección busca, en este orden, `exoplanetas_presentacion`, `exoplanetas_clase` y `exoplanetas`. Si escribes un nombre en `MONGO_COLLECTION`, se utiliza esa colección. La API normaliza los nombres de campos al formato final del proyecto sin reemplazar los documentos originales.
+En `.env` puedes usar `MONGO_URI="tu_cadena_real"`; `python-dotenv` interpreta las comillas. En el panel de variables de Render introduce el valor sin comillas añadidas. En los secretos TOML de Streamlit los textos sí llevan comillas.
 
-La colección original `exoplanetas` puede carecer de los indicadores `limite_*`. La API conserva esa ausencia y no supone que valgan `0`; por ello, algunas preguntas pueden quedar sin registros evaluables en esa versión.
+La detección automática busca la primera colección no vacía entre `exoplanetas_presentacion`, `exoplanetas_clase` y `exoplanetas`. Un nombre explícito tiene prioridad. La API reconoce las variantes del segundo corte y devuelve nombres uniformes sin reescribir los documentos originales. Los indicadores `limite_*` ausentes se conservan como desconocidos.
 
-Después de cambiar `GEMINI_API_KEY` o `MODELO_IA` en `.env`, reinicia Uvicorn para que lea los nuevos valores. La ausencia de la clave de Gemini afecta a `/preguntar`; las consultas, gráficas y capturas del proyecto base conservan su configuración habitual.
+Para URI `mongodb+srv://`, PyMongo utiliza `tlsCAFile=certifi.where()`. Esto aporta certificados de confianza; **no es un intermediario de red**. También deben ser correctos usuario, contraseña, DNS y acceso de red de Atlas. Consulta la [documentación de TLS de PyMongo](https://www.mongodb.com/docs/languages/python/pymongo-driver/current/security/tls/).
 
-### Certificados de MongoDB en Mac
+### Ejecutar: dos terminales
 
-Para una conexión `mongodb+srv://`, la API utiliza `tlsCAFile=certifi.where()`. Esto proporciona a Python el archivo de certificados de confianza y ayuda cuando la instalación de Python no encuentra los certificados necesarios para validar Atlas. `certifi` ya se utilizaba en el notebook del segundo corte y no actúa como servidor intermediario.
-
-La conexión conserva la verificación del certificado y del nombre del servidor. El ajuste se aplica a las URI SRV; las conexiones locales `mongodb://` conservan sus opciones originales. La referencia técnica está en la [documentación oficial de TLS de PyMongo](https://www.mongodb.com/docs/languages/python/pymongo-driver/current/security/tls/).
-
-Si aparece `Configura MONGO_URI y MONGO_DB en el archivo .env.`, alguna variable está vacía antes de intentar la conexión: revisa el archivo `.env` junto a `api.py`, guarda y reinicia Uvicorn. El ajuste de certificados no corrige una configuración vacía, una contraseña incorrecta, un problema DNS ni una IP sin acceso en Atlas.
-
-## Ejecutar ambos servicios localmente: dos terminales
-
-Las dos terminales deben estar dentro de la carpeta del proyecto y utilizar el entorno virtual.
-
-### Terminal 1: backend
-
-Activa el entorno:
-
-- Mac o Linux: `source venv/bin/activate`
-- Windows: `.\venv\Scripts\Activate.ps1`
-
-Ejecuta:
+En cada terminal, entra en la carpeta del proyecto y activa el entorno. En la primera ejecuta la API:
 
 ```bash
 python -m uvicorn api:app --reload
 ```
 
-La documentación interactiva se abre en [http://localhost:8000/docs](http://localhost:8000/docs). Comprueba la conexión en [http://localhost:8000/salud](http://localhost:8000/salud): debe devolver `estado: "ok"` y los nombres correctos de base y colección. Deja esta terminal funcionando mientras utilizas el dashboard.
-
-### Terminal 2: dashboard
-
-Activa el mismo entorno en una segunda terminal y ejecuta:
+Comprueba [http://localhost:8000/salud](http://localhost:8000/salud) y abre [http://localhost:8000/docs](http://localhost:8000/docs). En la segunda ejecuta el dashboard:
 
 ```bash
 python -m streamlit run dashboard.py
 ```
 
-La interfaz se abre en [http://localhost:8501](http://localhost:8501). Para detener cada programa, utiliza `Ctrl + C` en su terminal.
+Abre [http://localhost:8501](http://localhost:8501). Mantén ambos procesos funcionando; `Ctrl + C` detiene cada uno. Reinicia Uvicorn después de cambiar variables del backend.
 
-Para ejecutar el dashboard local utilizando la API publicada, configura `API_BASE_URL=https://exoplanetas-api-juanfmarbo.onrender.com` y ejecuta solamente Streamlit. En ese modo, el backend funciona en Render y la conexión privada con MongoDB se configura allí.
+Puedes ejecutar solo el dashboard local usando `API_BASE_URL=https://exoplanetas-api-juanfmarbo.onrender.com`; el backend funciona entonces en Render.
 
-## Usar el dashboard
+## Uso y rutas de la API
 
-- En la barra lateral, selecciona nombre, método, procedencia o años y pulsa **Aplicar filtros**.
-- **Preguntas del proyecto** muestra los cuatro análisis. Las cifras se calculan sobre toda la selección.
-- **Catálogo** muestra páginas de 25, 50 o 100 registros. El CSV descarga solo la página visible.
-- **Agregar registro** contiene los cuatro campos obligatorios y las medidas opcionales. Al guardar, la aplicación busca el registro manual recién creado para comprobarlo.
-- **Pregúntale a tus datos** recibe una pregunta de hasta 1.000 caracteres y utiliza la selección de filtros aplicada. Conserva la respuesta en la sesión; aplicar filtros, pulsar **Actualizar datos** o seleccionar automáticamente un registro recién creado la limpia para que vuelvas a preguntar sobre los datos actuales.
-- Para analizar únicamente los registros originales, selecciona **Solo catálogo NASA**. Deja una medida o su indicador vacíos cuando sean desconocidos.
-
-## Endpoints y uso
-
-Prueba las rutas desde [http://localhost:8000/docs](http://localhost:8000/docs): selecciona una ruta, pulsa **Try it out**, completa los valores y pulsa **Execute**.
+Aplica filtros en la barra lateral y recorre **Preguntas del proyecto**, **Catálogo**, **Agregar registro** y **Pregúntale a tus datos**. Las estadísticas usan toda la selección; la tabla muestra páginas de 25, 50 o 100 filas. Para analizar únicamente el catálogo original selecciona **Solo catálogo NASA**.
 
 | Método y ruta | Función |
 |---|---|
-| `GET /salud` | Comprobar disponibilidad del backend y conexión a MongoDB. |
-| `GET /opciones` | Consultar métodos de descubrimiento y metadatos de la colección. |
-| `GET /datos` | Consultar documentos con filtros y paginación. |
-| `GET /estadisticas` | Calcular las estadísticas para la selección. |
+| `GET /` | Presentar la API y sus rutas. |
+| `GET /salud` | Comprobar conexión, colección y cantidad de documentos. |
+| `GET /opciones` | Obtener opciones y advertencias sobre indicadores. |
+| `GET /datos` | Devolver registros filtrados y paginados. |
+| `GET /estadisticas` | Calcular distribuciones y las cuatro preguntas. |
 | `POST /datos` | Validar y guardar un registro manual. |
-| `POST /preguntar` | Enviar a Gemini una pregunta sobre el proyecto y los datos de la selección. |
+| `POST /preguntar` | Responder sobre la selección mediante Gemini. |
 
-Filtros de lectura, estadísticas y preguntas de IA: `metodo`, `nombre`, `anio_min`, `anio_max`, `solo_candidatos` y `origen` (`todos`, `nasa` o `manual`). En `/datos`, `pagina` y `por_pagina` controlan la porción de la tabla que se devuelve. Las estadísticas y el resumen utilizado por `/preguntar` corresponden a la selección completa, no únicamente a la página visible.
-
-Ejemplo de consulta:
+Los filtros compartidos son `metodo`, `nombre`, `anio_min`, `anio_max`, `solo_candidatos` y `origen`. Ejemplo:
 
 ```text
 http://localhost:8000/datos?metodo=Transit&anio_min=2020&pagina=1&por_pagina=25
 ```
 
-Para crear, son obligatorios `planeta`, `estrella`, `metodo_descubrimiento` y `anio_descubrimiento`. Las magnitudes y sus indicadores pueden omitirse cuando no se conocen. Los indicadores de límite admiten `-1`, `0`, `1` o `null`; los análisis que requieren valores puntuales utilizan `0`.
+Para crear se requieren `planeta`, `estrella`, `metodo_descubrimiento` y `anio_descubrimiento`. Las magnitudes desconocidas se omiten o se dejan en `null`; los indicadores admiten `-1`, `0`, `1` o `null`. La fuente manual la establece el servidor. Una creación correcta responde `201`; un duplicado detectado, `409`; una entrada inválida, `422`.
 
-Ejemplo **sintético para pruebas**, que no representa un descubrimiento real:
+En Swagger elige una operación, pulsa **Try it out**, completa los campos y pulsa **Execute**. Un POST válido guarda un documento real: usa un nombre identificable como demostración. La sustentación incluye ejemplos explicados.
 
-```json
-{
-  "planeta": "DEMO-PROYECTO-001",
-  "estrella": "Estrella de demostración",
-  "metodo_descubrimiento": "Transit",
-  "anio_descubrimiento": 2026,
-  "radio_tierras": 1.2,
-  "insolacion_tierra": 1.0,
-  "distancia_sistema_parsec": 10.0,
-  "limite_radio": 0,
-  "limite_insolacion": 0
-}
-```
+## Activar Gemini y publicar
 
-Una creación correcta responde `201`. Un nombre duplicado responde `409`; una entrada inválida, `422`; una base no disponible, `503`. La API fija la procedencia manual de los registros nuevos. Después de crear, consulta `/datos?origen=manual&nombre=DEMO-PROYECTO-001` para verificar la persistencia.
+Obtén una clave en [Google AI Studio](https://aistudio.google.com/apikey) y configúrala como `GEMINI_API_KEY` en el **backend**: `.env` en local o **Environment de Render** para la API pública. Aplica el cambio y reinicia o despliega según el entorno. El dashboard necesita la URL de la API, no la clave de Google.
 
-## Extra: preguntar a los datos con Gemini
+La llamada utiliza [generateContent](https://ai.google.dev/api/generate-content) y la cabecera `x-goog-api-key`. El modelo se configura con `MODELO_IA`. La pregunta tiene un máximo de 1.000 caracteres. Para preguntar por un planeta concreto, filtra su nombre: los treinta ejemplos no contienen necesariamente todos los objetos.
 
-La integración conserva las herramientas del ejemplo del profesor: `BaseModel` valida la pregunta, FastAPI atiende `POST /preguntar`, `requests.post` llama a la API REST de Gemini y Streamlit muestra la respuesta. El modelo predeterminado es [Gemini 3.6 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash?hl=en).
+Gemini puede razonar sobre las cifras recibidas; las instrucciones le piden reconocer lo que no está respaldado. No hay búsqueda web, entrenamiento propio ni ejecución de código generado. Contrasta sus explicaciones con las estadísticas calculadas por la API.
 
-El backend entrega a Gemini tres tipos de contexto:
-
-1. Una descripción del proyecto y las reglas de las cuatro preguntas.
-2. Las estadísticas calculadas por `estadisticas(filtros)` sobre **toda la selección**.
-3. Una muestra de **hasta 30 registros** de esa selección para describir ejemplos concretos.
-
-Los totales proceden del resumen completo. La muestra no es toda la colección y no permite concluir que un planeta ausente no exista. Para preguntar por un planeta concreto, busca su nombre en la barra lateral y pulsa **Aplicar filtros** antes de enviar la pregunta. Los valores desconocidos se conservan como desconocidos y los candidatos por radio e insolación no se presentan como habitabilidad demostrada.
-
-Ejemplo para `/docs`: en `POST /preguntar`, selecciona `origen=nasa` y utiliza este cuerpo JSON:
-
-```json
-{
-  "pregunta": "¿Cuántos candidatos cumplen radio e insolación y qué significa ese resultado?"
-}
-```
-
-Una respuesta correcta contiene `respuesta`, `modelo`, `total_registros` y `tamano_muestra`. Los dos últimos campos indican el tamaño de la selección y el de la muestra enviada. La pregunta utiliza los filtros de la URL; no se envían `pagina` ni `por_pagina` para limitar el resumen a una página.
-
-En local, configura la clave en `.env` y reinicia la API. Para la aplicación publicada, añádela en **Environment** del servicio de Render, como se explica en [GUIA_DESPLIEGUE.md](GUIA_DESPLIEGUE.md). Streamlit continúa utilizando únicamente `API_BASE_URL`.
-
-La clave viaja a Google en la cabecera `x-goog-api-key`. La API utiliza el endpoint REST [generateContent](https://ai.google.dev/api/generate-content?hl=en), comprueba la respuesta y devuelve mensajes propios ante errores. La operación consulta datos y produce una explicación: no guarda la pregunta en MongoDB ni ejecuta código generado por Gemini. Contrasta las respuestas con las tablas y gráficas del proyecto.
-
-## Archivos del proyecto
-
-| Archivo | Contenido |
-|---|---|
-| `api.py` | Conexión con MongoDB, filtros, estadísticas, creación de registros y consulta a Gemini. |
-| `dashboard.py` | Interfaz de consulta, visualización, creación y preguntas de IA. |
-| `requirements.txt` | Las siete dependencias directas utilizadas en clase. |
-| `.env.example` | Plantilla de configuración sin credenciales reales. |
-| `.gitignore` | Exclusiones para evitar subir secretos y el entorno virtual. |
-| `README.md` | Instalación, ejecución, uso y comprobaciones. |
-| `GUIA_CODIGO.md` | Recorrido de funciones e importaciones, validación, consultas y estado de la interfaz. |
-| `GUIA_SUSTENTACION.md` | Guion de demostración y explicación del código. |
-| `PRUEBAS_REALIZADAS.md` | Pruebas locales, confirmación en Mac y verificaciones de la API y el dashboard públicos. |
-| `render.yaml` | Plantilla del servicio de la API en Render Free, sin credenciales. |
-| `.python-version` | Versión de Python utilizada para construir la API en Render. |
-| `GUIA_DESPLIEGUE.md` | Configuración de Render y Streamlit Cloud, conexión con Atlas y verificación de las URLs públicas. |
-
-El archivo `.env` se crea únicamente en el equipo donde se ejecuta el proyecto. No forma parte del repositorio.
-
-## Correspondencia con la rúbrica
-
-La distribución siguiente procede de `GUIA_PROYECTO_FINAL.md`, incluida en el material de clase.
-
-| Componente evaluado | Puntos | Evidencia que se debe demostrar |
-|---|---:|---|
-| API de lectura: filtros y agregación | 1.2 | Consultas que devuelven datos correctos y estadísticas calculadas sobre el conjunto correspondiente. |
-| API de escritura: POST, validación y códigos de estado | 1.0 | Creación de un registro válido y rechazo de una entrada inválida. |
-| Dashboard: consume la API, filtra, grafica y crea | 1.4 | Tabla, filtros, gráficas y formulario conectados al backend. |
-| Integración, calidad de código y seguridad de credenciales | 0.8 | Recorrido completo entre interfaz, API y MongoDB; código organizado y secretos excluidos. |
-| Sustentación y defensa | 0.6 | Explicación del recorrido de los datos y de las decisiones del proyecto. |
-| **Total ordinario** | **5.0** | |
-
-La guía contempla un bono de hasta **0.3** por despliegue con URL pública y una penalización de **0.3 a 0.5** por credenciales expuestas. La asignación de la nota corresponde al docente.
-
-El extra de Gemini fue añadido posteriormente por el profesor. Se documenta como una ampliación; no se le asigna un puntaje nuevo sin una indicación del docente.
-
-## Git y credenciales
-
-Revisa los archivos antes de cada commit:
-
-```bash
-git status
-git diff
-git check-ignore .env
-```
-
-Si `.env` existe y está excluido, el último comando muestra su nombre. La exclusión evita incorporar archivos nuevos, pero no elimina un secreto que ya se hubiera publicado en un commit anterior. Una credencial publicada debe reemplazarse en su proveedor: Atlas para la base de datos o Google AI Studio para Gemini.
-
-Guarda avances con mensajes concretos, por ejemplo, `Agrega filtros por categoría`. Comprueba en GitHub que `.env` y `venv/` no aparecen y que `.env.example` solo contiene valores de ejemplo.
-
-### Obtener o actualizar el repositorio existente
-
-El repositorio ya tiene historial. Para obtener una copia nueva, ejecuta estos comandos desde la carpeta donde quieras guardarla:
-
-```bash
-git clone https://github.com/Juanfmarbo/First-API.git
-cd First-API
-```
-
-Si ya tienes una copia clonada, revisa tus cambios antes de actualizarla:
-
-```bash
-git status
-git pull --ff-only
-```
-
-Si hay modificaciones locales, revísalas y guárdalas antes de actualizar. El ZIP contiene archivos de trabajo sin el historial de Git; puedes conservarlo como copia o trasladar tus cambios a una copia clonada. Conserva el historial y la configuración remota del repositorio existente.
-
-Para guardar cambios propios, utiliza el ciclo habitual `add`, `commit` y `push`. Configura tu identidad de Git si todavía hace falta. Publicar cambios requiere acceso autenticado a GitHub.
-
-## Despliegue para el bono
-
-La API funciona en Render Free y el dashboard está disponible en Streamlit Community Cloud. El README docente permite presentar la API y/o el dashboard para el bono; este proyecto dispone de ambas URLs. La sustentación y la asignación de la nota corresponden a la evaluación del docente.
-
-La [guía de despliegue](GUIA_DESPLIEGUE.md) detalla los valores de configuración, los secretos y las comprobaciones finales. El archivo `render.yaml` conserva una plantilla del backend. Si ya existe un servicio para esta API, continúa con ese servicio para evitar crear otro.
-
-Para reproducir la configuración del backend, instala las dependencias con:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-Y configura el comando de inicio:
+Render instala `requirements.txt` y ejecuta:
 
 ```bash
 python -m uvicorn api:app --host 0.0.0.0 --port $PORT
 ```
 
-Configura las variables de MongoDB en el servicio, sin escribirlas en el código. Revisa también el acceso de red de Atlas. Para el dashboard, selecciona `dashboard.py` y configura `API_BASE_URL` con la dirección pública de la API. Una dirección `localhost` identifica el equipo o servicio donde se ejecuta el programa, por lo que no conecta dos servicios distintos en internet.
+Streamlit Cloud utiliza `dashboard.py` y este secreto de nivel raíz:
 
-Las consultas, estadísticas y una creación manual se verificaron en la API pública. En el dashboard público se comprobaron la pantalla completa, los filtros, la paginación y el envío de una captura manual que quedó guardada en Atlas y visible en el catálogo. La aplicación también puede ejecutarse localmente.
+```toml
+API_BASE_URL = "https://exoplanetas-api-juanfmarbo.onrender.com"
+```
 
-## Errores frecuentes
+`render.yaml` es una plantilla: su presencia en GitHub no configura por sí sola un servicio creado manualmente. El [capítulo de instalación y despliegue](presentacion-sustentacioln.md#despliegue) detalla los pasos y el estado verificado. Las URLs públicas no dependen de mantener abierto un puerto de tu Mac o de VS Code.
 
-| Síntoma | Qué revisar |
+## Diagnóstico rápido
+
+| Problema | Revisión |
 |---|---|
-| Falta un módulo | Que la instalación y la ejecución usen el mismo entorno virtual. |
-| No se conecta a MongoDB | Cadena de conexión, credenciales, nombres de base y colección, y acceso de red en Atlas. |
-| El dashboard no conecta | Que la API siga ejecutándose y que su dirección sea correcta. |
-| No aparecen resultados | Filtros seleccionados, base y colección configuradas, y existencia de datos. |
-| El puerto 8000 está ocupado | Detener el proceso anterior o elegir otro puerto y actualizar la dirección usada por el dashboard. |
-| Un registro es rechazado | Leer el detalle de validación y corregir los campos indicados. |
-| `/preguntar` responde `503` | Configurar `GEMINI_API_KEY`, revisar permisos y `MODELO_IA`, y reiniciar o desplegar la API. Google puede rechazar la configuración con `400`, `401`, `403` o `404`; nuestra API lo comunica como `503` con un mensaje propio. |
-| Gemini responde `429` | Revisar la cuota disponible en Google AI Studio y esperar antes de volver a preguntar. |
-| La pregunta devuelve `504` | La llamada a Gemini superó el tiempo de espera; intentar de nuevo con una pregunta más concreta. |
-| La pregunta devuelve `502` | La llamada a Google falló o no produjo una respuesta utilizable; leer el mensaje y volver a intentarlo. |
+| `venv/bin/activate` no existe | Carpeta correcta y entorno creado antes de activarlo. |
+| `No module named streamlit` | Instala requisitos con el mismo Python que utilizas para ejecutar. |
+| MongoDB no conecta | Variables, base, colección, credenciales, DNS, certificados y Network Access. |
+| Dashboard sin conexión | `/salud`, URL base y proceso de API funcionando. |
+| Sin resultados | Filtros y colección; una selección vacía puede ser válida. |
+| IA devuelve `503` | Lee el detalle: clave ausente o configuración del modelo, entre otras causas. |
+| IA devuelve `429`, `504` o `502` | Cuota/límite, espera agotada o fallo/respuesta no utilizable del proveedor, respectivamente. |
 
-## Verificación realizada
+`.env`, `.streamlit/secrets.toml` y los entornos virtuales están excluidos de Git. `.gitignore` no elimina credenciales ya publicadas: una credencial expuesta debe reemplazarse en su proveedor.
 
-La integración local completó **112 comprobaciones con 0 fallos**, utilizando MongoDB real local, solicitudes HTTP y AppTest de Streamlit con datos ficticios. Incluyen verificaciones de estado y de contenido, no 112 casos independientes. El alcance y las limitaciones están en [PRUEBAS_REALIZADAS.md](PRUEBAS_REALIZADAS.md).
+## Preparar la sustentación
 
-Posteriormente, el usuario confirmó `/salud = ok` y el funcionamiento del dashboard en su Mac. Esta confirmación se distingue de nuestras pruebas automatizadas.
+Estudia [presentacion-sustentacioln.md](presentacion-sustentacioln.md). Contiene el recorrido función por función, los fundamentos de GET y POST, MongoDB, validación, fórmulas, gráficas, estado de Streamlit, IA, despliegue, verificaciones y un guion con preguntas y respuestas.
 
-La API pública completó otras **31 comprobaciones con 0 fallos**, mediante **12 GET y un único POST** contra Atlas. La captura técnica quedó identificada como manual, con magnitudes desconocidas, y se confirmó su persistencia y exclusión del catálogo NASA. Estas cifras corresponden a la prueba inicial de la API, no a una repetición pública de la suite local.
-
-El dashboard público se abrió posteriormente en el navegador, sin login. Se verificaron las tres pestañas de la versión del 2 de noviembre, las cuatro preguntas con gráficas, el filtro NASA y el filtro de candidatos. La selección de 27 candidatos se mostró en dos páginas de 25 y 2 filas.
-
-Se guardó una captura técnica mediante un único envío del formulario público. La interfaz confirmó la creación y mostró exactamente una fila con el nombre guardado. Una verificación separada mediante **6 GET y 12 comprobaciones correctas, con 0 fallos**, confirmó persistencia, procedencia manual, valores desconocidos y exclusión de NASA. La verificación mediante estas consultas terminó el **2 de noviembre de 2026 a las 15:36:00, hora de Bogotá**. Sus comprobaciones se mantienen separadas de las acciones visuales y de las verificaciones anteriores.
-
-La ampliación de Gemini del **8 de noviembre** tiene su propia verificación en `PRUEBAS_REALIZADAS.md`. Las pruebas anteriores no incluyen una respuesta del modelo. Para acreditar una llamada real, debe configurarse la clave, enviar una pregunta y contrastar la respuesta con las estadísticas de la misma selección.
+La rúbrica suministrada distribuye 5,0 puntos entre lectura de API, escritura, dashboard, integración/calidad y sustentación; contempla un bono de hasta 0,3 por despliegue. Gemini es una ampliación posterior sin puntaje adicional especificado en el material disponible. Consulta la [correspondencia con la rúbrica](presentacion-sustentacioln.md#rubrica).
